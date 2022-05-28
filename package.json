@@ -2,7 +2,7 @@
   "name": "Image2PDF",
   "version": "0.1.0",
   "description": "A boilerplate for creating a browser extension with webpack",
-  "author": "Filip Stanis <filip@stanis.me>",
+  "author": "Saptarshi Mondal <mondalsaptarshi7@gmail.com>",
   "license": "0BSD",
   "repository": {
     "type": "git",
@@ -10,7 +10,8 @@
   },
   "scripts": {
     "start": "webpack --config webpack.config.js",
-    "dev": "webpack -w --config webpack.config.js"
+    "dev": "webpack -w --config webpack.config.js",
+    "exn": "cd dist/ && npx web-ext run"
   },
   "//": "[TODO] Remove webpack-sources when this is fixed: https://github.com/webpack/webpack-sources/issues/28",
   "devDependencies": {
