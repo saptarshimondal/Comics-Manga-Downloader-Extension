@@ -33,12 +33,13 @@ const imagesSelectionController = function (id, checked) {
 };
 
 
-const downloaderController = async function () {
+const downloaderController = async function (fileName) {
 
 	try {
 		const images = getState('filteredImages').filter(img => img.checked)
 
 		const code = `
+
 			const images = JSON.parse('${JSON.stringify(images)}')		
 			
 			let markup = "";
@@ -49,7 +50,7 @@ const downloaderController = async function () {
 			})
 
 			document.body.innerHTML = markup;
-			document.title = "Demo Title";
+			document.title = "${fileName}";
 
 			window.print();
 
