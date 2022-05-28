@@ -7,7 +7,7 @@ class SearchView extends View {
 	}
 
 	addHandlerSearch(handler){
-		this._parent.addEventListener('change'/*'keyup'*/, handler);
+		this._parent.addEventListener('keyup', handler);
 	}
 }
 

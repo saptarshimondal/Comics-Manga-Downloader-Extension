@@ -35,30 +35,36 @@ const imagesSelectionController = function (id, checked) {
 
 const downloaderController = async function () {
 
-	const images = getState('filteredImages').filter(img => img.checked)
+	try {
+		const images = getState('filteredImages').filter(img => img.checked)
 
-	const code = `
-		const images = JSON.parse('${JSON.stringify(images)}')
-		
-		let markup = "";
+		const code = `
+			const images = JSON.parse('${JSON.stringify(images)}')		
+			
+			let markup = "";
 
-		images.forEach(function (img) {
+			images.forEach(function (img) {
 
-			markup += "<page size='A4'><img src='"+img.src+"'/></page>"
-		})
+				markup += "<page size='A4'><img src='"+img.src+"'/></page>"
+			})
 
-		document.body.innerHTML = markup;
-		document.title = "Demo Title";
+			document.body.innerHTML = markup;
+			document.title = "Demo Title";
 
-		window.print();
+			window.print();
 
-	`;
+		`;
 
-	browser.tabs.create({url: imagesHTML}).then(() => {
-	  browser.tabs.executeScript({
-	    code: code
-	  });
-	});
+		await browser.tabs.create({url: imagesHTML})
+
+		return browser.tabs.executeScript({
+			code: code
+		});
+	} catch(e) {
+		throw e;
+		console.error(e);
+	}
+
 };
 
 

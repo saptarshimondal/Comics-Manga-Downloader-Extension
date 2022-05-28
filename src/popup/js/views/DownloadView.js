@@ -19,14 +19,11 @@ class DownloadView extends View {
 
 	addHandlerDownloader(handler){
 
-		const fileName = this._fileName.value;
-
-
-		this._parent.addEventListener('click', () => {
-		console.log(fileName)
-			// dump(this._fileName.value, true)
-			// handler();
-		})	
+		// const fileName = this._fileName.value;
+		this._parent.addEventListener('click', async function(){
+			await handler();
+			window.close();
+		});	
 	}
 }
 

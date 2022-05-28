@@ -1,7 +1,7 @@
 import View from './View';
 import openIcon from '../../images/open.svg';
 import downloadIcon from '../../images/download.svg';
-import {dump} from '../helpers';
+import { dump, hasSomeParentTheClass } from '../helpers';
 
 class ImagesView extends View {
 
@@ -31,8 +31,8 @@ class ImagesView extends View {
 		let markup = ``;
 
 		this._data.forEach(function (img, i) {
-			markup += `<div id="card_${i}" class="card ${ img.checked ? 'checked' : '' }" style="min-height: 200px;"><img src="${img.src}" style="min-width: 50px; max-width: 200px;">
-                <div data-id="${i}" class="checkbox"></div>
+			markup += `<div data-id="${i}" id="card_${i}" class="card ${ img.checked ? 'checked' : '' }" style="min-height: 200px;"><img src="${img.src}" style="min-width: 50px; max-width: 200px;">
+                <div class="checkbox"></div>
                 <div class="actions">
                   <button type="button" title="Open in new tab" style="background-image: url(${openIcon});"></button>
                   <button type="button" title="Download" style="background-image: url(${downloadIcon});"></button>
@@ -52,16 +52,23 @@ class ImagesView extends View {
 
 	addHandlerSelection(handler){
 		this._parent.addEventListener('click', function (e) {
-			if (e.target.classList.contains('checkbox')) {
-				if(e.target.parentElement.classList.contains('checked')){
-					e.target.parentElement.classList.remove('checked')
 
-					handler(Number(e.target.dataset.id), false);
+			if(hasSomeParentTheClass(e.target, 'card') 
+				&& e.target.nodeName !== "BUTTON" 
+				&& e.target.nodeName !== "INPUT"){
+
+				const card = e.target.closest('div.card');
+
+				if(card.classList.contains('checked')){
+					card.classList.remove('checked')
+
+					handler(Number(card.dataset.id), false);
 				}
 				else{
-					e.target.parentElement.classList.add('checked')
-					handler(Number(e.target.dataset.id), true);
+					card.classList.add('checked')
+					handler(Number(card.dataset.id), true);
 				}
+
 			}
 		});
 

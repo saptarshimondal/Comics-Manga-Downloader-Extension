@@ -25,3 +25,13 @@ export const dump = function (variable, type = false) {
     const op = JSON.stringify(variable, null, 4)
     console.log(type ? `(${typeof variable}) ${op}` : op)
 }
+
+export const hasSomeParentTheClass = function(element, classname) {
+    try {
+        if (element.className.split(' ').indexOf(classname)>=0) return true;
+        return element.parentNode && hasSomeParentTheClass(element.parentNode, classname);
+    } catch(e) {        
+        // console.log(e);
+        return false
+    }
+}
