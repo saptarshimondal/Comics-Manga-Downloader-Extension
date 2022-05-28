@@ -1,14 +1,9 @@
 {
   "manifest_version": 2,
-  "name": "{{prop-loader?name!../package.json}}",
-  "version": "{{prop-loader?version!../package.json}}",
-  "description": "{{prop-loader?description!../package.json}}",
-  "author": "{{prop-loader?author!../package.json}}",
-  "background": {
-    "scripts": [
-      "{{./background/index.js}}"
-    ]
-  },
+  "name": "Image2PDF",
+  "version": "0.1.0",
+  "description": "",
+  "author": "Saptarshi Mondal",
   "options_ui": {
     "page": "{{./options/index.html}}"
   },

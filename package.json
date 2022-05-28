@@ -1,5 +1,5 @@
 {
-  "name": "webextensions-webpack-boilerplate",
+  "name": "Image2PDF",
   "version": "0.1.0",
   "description": "A boilerplate for creating a browser extension with webpack",
   "author": "Filip Stanis <filip@stanis.me>",
@@ -9,9 +9,9 @@
     "url": "https://github.com/fstanis/webextensions-webpack-boilerplate.git"
   },
   "scripts": {
-    "start": "webpack --config webpack.config.js"
+    "start": "webpack --config webpack.config.js",
+    "dev": "webpack -w --config webpack.config.js"
   },
-
   "//": "[TODO] Remove webpack-sources when this is fixed: https://github.com/webpack/webpack-sources/issues/28",
   "devDependencies": {
     "babel-core": "^6.26.0",
@@ -34,5 +34,8 @@
     "webextension-polyfill": "^0.2.1",
     "webpack": "^3.7.1",
     "webpack-sources": "1.0.1"
+  },
+  "dependencies": {
+    "jspdf": "^2.5.1"
   }
 }
