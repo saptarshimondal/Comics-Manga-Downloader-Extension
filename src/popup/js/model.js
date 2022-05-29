@@ -29,6 +29,12 @@ export const fetchImages = async () => {
 				imgData.push(img.src)
 			}
 
+			const canvases = document.querySelectorAll('canvas');
+
+			for(let canvas of canvases){
+				imgData.push(canvas.toDataURL('image/jpeg'))
+			}
+
 			imgData;
 		}
 		else{
