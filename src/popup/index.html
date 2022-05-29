@@ -159,7 +159,7 @@
             background: var(--neutral-lighter);
           }
     
-          #images_container .select_all_checkbox {
+          #select_all_checkbox_container .select_all_checkbox {
             grid-column: 1 / -1;
             font-weight: bold;
           }
@@ -244,6 +244,16 @@
           }
     
           /* checkbox */
+
+          #select_all_checkbox_container {
+            flex: 1;
+            display: grid;
+            gap: var(--images-container-gap);
+            padding: var(--images-container-padding);
+            padding-top: 9px;
+            background: var(--neutral-lighter);
+          }
+
           #images_container .checkbox {
             width: 34px;
             height: 34px;
@@ -317,11 +327,7 @@
         <div id="filters_container">
             <div style="display: flex; align-items: center; gap: 4px;">
               <input type="text" id="query" placeholder="Filter by URL" title="Filter by parts of the URL or regular expressions." value="" style="flex: 1 1 0%;">
-              <!-- <select>
-                <option value="normal">Text</option>
-                <option value="wildcard">Wildcard</option>
-                <option value="regex">Regex</option>
-              </select> -->
+
               <button id="toggle_advanced_filters_button" class="" title="Toggle advanced filters">
                 <img class="toggle" src="./images/times.svg">
               </button>
@@ -340,7 +346,36 @@
               </div>
         </div>
         <div class="hidden"></div>
+
+        <div id="select_all_checkbox_container">
+          <!-- <label class="select_all_checkbox" title="">
+            <input type="checkbox" id="selectAllCheckBox" checked style="margin-left: 0px;">Select all (0 / 0)
+          </label> -->
+        </div>
+
         <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: calc(2 * var(--images-container-padding) + 2 * 200px + 1 * var(--images-container-gap));">
+
+          <!-- <div id="card_0" class="card checked" style="min-height: 200px;"><img src="https://2.bp.blogspot.com/-gD71WJm8_l9JoHGNGLVFKjnoWWqfkJoFFquHrv6SCFhkFE1byDiZLLeivAj3irNjjHa7uYHnNbPPCemnFEQGpq9AqOcFZ-o317Leo36EuP1dZDiK9bGji0MKVB9EWxgTS_U6HSp19E=s1600" style="min-width: 50px; max-width: 200px;">
+              <div class="checkbox"></div>
+              <div class="actions"><button type="button" title="Open in new tab" style="background-image: url(&quot;/images/open.svg&quot;);"></button><button type="button" title="Download" style="background-image: url(&quot;/images/download.svg&quot;);"></button></div>
+              <div class="image_url_container"><input type="text" value="https://2.bp.blogspot.com/-gD71WJm8_l9JoHGNGLVFKjnoWWqfkJoFFquHrv6SCFhkFE1byDiZLLeivAj3irNjjHa7uYHnNbPPCemnFEQGpq9AqOcFZ-o317Leo36EuP1dZDiK9bGji0MKVB9EWxgTS_U6HSp19E=s1600"></div>
+          </div>
+          <div id="card_1" class="card " style="min-height: 200px;"><img src="https://2.bp.blogspot.com/axIeNyoqjtCahXbBxfzOSEscPs0PZe2dwM6VwBVxicbGmshWRo5dioibk_5091PNMkRfF4aFeSkfptRMYhFWlGC-R4R5vRbmLwG7Uwn8RJXvQvwYPMx4oR9GGlMUxXhxpz4opIQ4FCY=s1600" style="min-width: 50px; max-width: 200px;">
+              <div class="checkbox"></div>
+              <div class="actions"><button type="button" title="Open in new tab" style="background-image: url(&quot;/images/open.svg&quot;);"></button><button type="button" title="Download" style="background-image: url(&quot;/images/download.svg&quot;);"></button></div>
+              <div class="image_url_container"><input type="text" value="https://2.bp.blogspot.com/axIeNyoqjtCahXbBxfzOSEscPs0PZe2dwM6VwBVxicbGmshWRo5dioibk_5091PNMkRfF4aFeSkfptRMYhFWlGC-R4R5vRbmLwG7Uwn8RJXvQvwYPMx4oR9GGlMUxXhxpz4opIQ4FCY=s1600"></div>
+          </div>
+          <div id="card_2" class="card " style="min-height: 200px;"><img src="https://2.bp.blogspot.com/j0ilUvUcUSg3WEtDkeWZ90aZ76vLXP3us6x-j9_jcsIFWTBfR3BztTRgZVXyYU4BCvW-Av-uFvatgll6qkXe9q1-svIEnvRkCCx8pbVKl9WkO4bhAxxPzgl0E7iwne_cXuLn61w4J3I=s1600" style="min-width: 50px; max-width: 200px;">
+              <div class="checkbox"></div>
+              <div class="actions"><button type="button" title="Open in new tab" style="background-image: url(&quot;/images/open.svg&quot;);"></button><button type="button" title="Download" style="background-image: url(&quot;/images/download.svg&quot;);"></button></div>
+              <div class="image_url_container"><input type="text" value="https://2.bp.blogspot.com/j0ilUvUcUSg3WEtDkeWZ90aZ76vLXP3us6x-j9_jcsIFWTBfR3BztTRgZVXyYU4BCvW-Av-uFvatgll6qkXe9q1-svIEnvRkCCx8pbVKl9WkO4bhAxxPzgl0E7iwne_cXuLn61w4J3I=s1600"></div>
+          </div>
+          <div id="card_3" class="card " style="min-height: 200px;"><img src="https://2.bp.blogspot.com/cq2SA277FHwEGE7pOMubICarfyfPMUgfvqmnbpvg3hkjjlRKQWHMbWvGXOQGugKbYCet8dTpk8xMo5OQPG0AmnBvwHVavHspce8Fg5EFHOcAXXw3vhW5417zsWXzFXRVvcNt2DfILPo=s1600" style="min-width: 50px; max-width: 200px;">
+              <div class="checkbox"></div>
+              <div class="actions"><button type="button" title="Open in new tab" style="background-image: url(&quot;/images/open.svg&quot;);"></button><button type="button" title="Download" style="background-image: url(&quot;/images/download.svg&quot;);"></button></div>
+              <div class="image_url_container"><input type="text" value="https://2.bp.blogspot.com/cq2SA277FHwEGE7pOMubICarfyfPMUgfvqmnbpvg3hkjjlRKQWHMbWvGXOQGugKbYCet8dTpk8xMo5OQPG0AmnBvwHVavHspce8Fg5EFHOcAXXw3vhW5417zsWXzFXRVvcNt2DfILPo=s1600"></div>
+          </div> -->
+
 
         </div>
         <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px;">

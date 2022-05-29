@@ -1,5 +1,5 @@
 {
-  "name": "Image2PDF",
+  "name": "ComicsDownloaderPlugin",
   "version": "0.1.0",
   "description": "A boilerplate for creating a browser extension with webpack",
   "author": "Saptarshi Mondal <mondalsaptarshi7@gmail.com>",

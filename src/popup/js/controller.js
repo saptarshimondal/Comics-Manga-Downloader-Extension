@@ -1,6 +1,7 @@
 import ImagesView from './views/ImagesView';
 import DownloadView from './views/DownloadView';
 import SearchView from './views/SearchView';
+import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
 import { fetchImages, getState, setState } from './model';
 import { dump } from './helpers';
 import imagesHTML from '../images.html';
@@ -15,9 +16,13 @@ const imagesController = async function () {
 	if(!response){
 		ImagesView.showError();
 	}
+	else if(!response.length){
+		ImagesView.showError("No images found on this page!");	
+	}
 	else{
 		const images = response.filter(i => i.src !== "")
-		ImagesView.render(images)
+		SelectAllCheckBoxView.render(images)
+		ImagesView.render(images);
 		DownloadView.render(images);
 	}
 };
@@ -25,11 +30,13 @@ const imagesController = async function () {
 
 const imagesSelectionController = function (id, checked) {
 
-	const images = getState('filteredImages')
+	const images = getState('filteredImages');
 
-	images[id].checked = checked
+	images[id].checked = checked;
 
-	setState('images', images)
+	setState('filteredImages', images);
+	SelectAllCheckBoxView.render(images);
+	DownloadView.render(images);
 };
 
 
@@ -75,24 +82,35 @@ export const searchController = function (e) {
 	let images = getState('images');
 
 	const filteredImages = images.filter(img => img.src.includes(query)).map(({src}) => {
-		return {'src': src, 'checked': true}
+		return {'src': src, 'checked': false}
 	})
 
 	setState('filteredImages', filteredImages);
 	ImagesView.render(filteredImages);
+	SelectAllCheckBoxView.render(filteredImages);
+	DownloadView.render(filteredImages);
 
 }
 
 
 export const selectAllController = function (checkVal) {
-	dump(checkVal);
+	// dump(checkVal);
+
+	let images = getState('filteredImages');
+	images = images.map(({src, checked}) => {
+		return {'src': src, 'checked': checkVal}
+	})
+
+	SelectAllCheckBoxView.render(images);
+	ImagesView.render(images);
+	DownloadView.render(images);
 }
 
 
 export const init = function () {
 	ImagesView.addHandlerRender(imagesController);
 	ImagesView.addHandlerSelection(imagesSelectionController);
-	ImagesView.addHandlerSelectAll(selectAllController);
+	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);
 	SearchView.addHandlerSearch(searchController);
 

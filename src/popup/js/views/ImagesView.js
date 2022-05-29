@@ -11,23 +11,6 @@ class ImagesView extends View {
 	}
 
 	_buildMarkUp(){
-		const checkBoxMarkup = this._data.length > 2 ? this._buildSelectCheckBoxMarkup() : '';
-		const imagesMarkup = this._buildImagesMarkup();
-
-		return checkBoxMarkup+imagesMarkup;
-	}
-
-	_buildSelectCheckBoxMarkup(){
-		const markup = `
-			<label class="select_all_checkbox" title="">
-	      <input type="checkbox" id="selectAllCheckBox" checked style="margin-left: 0px;">Select all (${this._data.filter(i => i.checked === true).length} / ${this._data.length})
-	    </label>
-		`;
-
-		return markup.trim();
-	}
-
-	_buildImagesMarkup(){
 		let markup = ``;
 
 		this._data.forEach(function (img, i) {
@@ -41,8 +24,6 @@ class ImagesView extends View {
           	</div>`;
 		});
 
-
-
 		return markup.trim();
 	}
 
@@ -51,7 +32,7 @@ class ImagesView extends View {
 	}
 
 	addHandlerSelection(handler){
-		this._parent.addEventListener('click', function (e) {
+		this._parent.addEventListener('click', (e) => {
 
 			if(hasSomeParentTheClass(e.target, 'card') 
 				&& e.target.nodeName !== "BUTTON" 
@@ -72,18 +53,6 @@ class ImagesView extends View {
 			}
 		});
 
-	}
-
-
-	addHandlerSelectAll(handler){
-		/*this._selectAllCheckBox = document.querySelector('#selectAllCheckBox');
-
-		dump(this._selectAllCheckBox., true)*/
-		
-		/*this._selectAllCheckBox.addEventListener('change', function (e) {
-			dump(e.target.classList, true)
-			// handler(true)
-		})*/
 	}
 
 }

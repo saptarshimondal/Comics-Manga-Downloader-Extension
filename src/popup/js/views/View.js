@@ -17,7 +17,7 @@ export default class View {
 	}
 
 	showError(msg){
-		const markup = `Error: "${msg ? msg : this._defaultErrorMsg}"`;
+		const markup = `${msg ? msg : this._defaultErrorMsg}`;
 
 	  this._clear();
 

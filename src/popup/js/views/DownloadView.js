@@ -9,7 +9,9 @@ class DownloadView extends View {
 
 	_buildMarkUp(){
 
-		if(!this._data.some(img => !img.checked)){
+		// console.log(this._data, this._data.some(img => !img.checked));
+
+		if(this._data.some(img => img.checked === true)){
 			this._parent.removeAttribute('disabled');
 		}
 		else{
