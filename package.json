@@ -11,7 +11,7 @@
   "scripts": {
     "start": "webpack --config webpack.config.js",
     "dev": "webpack -w --config webpack.config.js",
-    "exn": "cd dist/ && npx web-ext run"
+    "ext": "cd dist/ && npx web-ext run"
   },
   "//": "[TODO] Remove webpack-sources when this is fixed: https://github.com/webpack/webpack-sources/issues/28",
   "devDependencies": {
