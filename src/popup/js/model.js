@@ -1,7 +1,11 @@
 import contentScript from '../../content/index.js';
 
 const state = {
-	data: []
+	data: [
+		{ 'images': [] },
+		{ 'filteredImages': [] },
+		{ 'query': '' },
+	]
 };
 
 export const setState = (key, value) => {

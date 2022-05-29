@@ -95,7 +95,7 @@ export const searchController = function (e) {
 	let images = getState('images');
 
 	const filteredImages = images.filter(img => img.src.includes(query)).map(({src}) => {
-		return {'src': src, 'checked': false}
+		return {'src': src, 'checked': true}
 	})
 
 	setState('filteredImages', filteredImages);
@@ -105,6 +105,11 @@ export const searchController = function (e) {
 
 }
 
+export const clearSearchController = async function (){
+	setState('query', '');
+	await imagesController();
+}
+
 
 export const init = function () {
 	ImagesView.addHandlerRender(imagesController);
@@ -112,5 +117,6 @@ export const init = function () {
 	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);
 	SearchView.addHandlerSearch(searchController);
+	SearchView.addHandlerClearSearch(clearSearchController);
 
 };
