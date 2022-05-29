@@ -28,17 +28,31 @@ const imagesController = async function () {
 };
 
 
-const imagesSelectionController = function (id, checked) {
+const imagesSelectionController = function (id, checkVal) {
 
 	const images = getState('filteredImages');
 
-	images[id].checked = checked;
+	images[id].checked = checkVal;	
 
 	setState('filteredImages', images);
 	SelectAllCheckBoxView.render(images);
 	DownloadView.render(images);
 };
 
+
+export const selectAllController = function (checkVal) {
+
+	let images = getState('filteredImages');
+	images = images.map(({src, checked}) => {
+		return {'src': src, 'checked': checkVal}
+	})
+
+	setState('filteredImages', images);
+
+	SelectAllCheckBoxView.render(images);
+	ImagesView.render(images);
+	DownloadView.render(images);
+}
 
 const downloaderController = async function (fileName) {
 
@@ -77,7 +91,6 @@ const downloaderController = async function (fileName) {
 
 
 export const searchController = function (e) {
-	// console.log(e.target.value)
 	const query = setState('query', e.target.value);
 	let images = getState('images');
 
@@ -90,20 +103,6 @@ export const searchController = function (e) {
 	SelectAllCheckBoxView.render(filteredImages);
 	DownloadView.render(filteredImages);
 
-}
-
-
-export const selectAllController = function (checkVal) {
-	// dump(checkVal);
-
-	let images = getState('filteredImages');
-	images = images.map(({src, checked}) => {
-		return {'src': src, 'checked': checkVal}
-	})
-
-	SelectAllCheckBoxView.render(images);
-	ImagesView.render(images);
-	DownloadView.render(images);
 }
 
 
