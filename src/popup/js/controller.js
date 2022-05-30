@@ -94,7 +94,7 @@ export const searchController = function (e) {
 	const query = setState('query', e.target.value);
 	let images = getState('images');
 
-	const filteredImages = images.filter(img => img.src.includes(query)).map(({src}) => {
+	const filteredImages = images.filter(img => img.src.startsWith(query)).map(({src}) => {
 		return {'src': src, 'checked': true}
 	})
 
