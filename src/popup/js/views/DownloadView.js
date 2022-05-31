@@ -21,9 +21,9 @@ class DownloadView extends View {
 
 	addHandlerDownloader(handler){		
 		this._parent.addEventListener('click', async () => {
-			if(this._fileName.value){				
+			if(this._fileName.value){
 				await handler(this._fileName.value);
-				window.close();
+				// window.close();
 			}
 			else{
 				this._fileName.focus();

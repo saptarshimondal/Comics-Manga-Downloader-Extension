@@ -5,13 +5,13 @@ import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
 import { initState, getState, setState } from './model';
 import { dump } from './helpers';
 import imagesHTML from '../images.html';
+import contentScript from '../../content/index.js';
 
 const imagesController = async function () {
 
 	ImagesView.showLoader();
 
 	const response = getState('filteredImages');
-
 
 	if(!response){
 		ImagesView.showError();
@@ -57,31 +57,25 @@ export const selectAllController = function (checkVal) {
 const downloaderController = async function (fileName) {
 
 	try {
-		const images = getState('filteredImages').filter(img => img.checked)
+		const images = getState('filteredImages').filter(img => img.checked);
 
-		const code = `
+		await browser.tabs.create({url: imagesHTML});
 
-			const images = JSON.parse('${JSON.stringify(images)}')		
-			
-			let markup = "";
-
-			images.forEach(function (img) {
-
-				markup += "<page size='A4'><img src='"+img.src+"'/></page>"
-			})
-
-			document.body.innerHTML = markup;
-			document.title = "${fileName}";
-
-			window.print();
-
-		`;
-
-		await browser.tabs.create({url: imagesHTML})
-
-		return browser.tabs.executeScript({
-			code: code
+		await browser.tabs.executeScript({
+			file: contentScript
 		});
+
+		const tabs = await browser.tabs.query({active: true, currentWindow: true});
+		const response = await browser.tabs.sendMessage(tabs[0].id, {
+			"method": "generatePDF", 
+			"filename": fileName,
+			"images": images
+		});
+
+		console.log(response)
+
+		return Promise.resolve("Page created successfully!")
+
 	} catch(e) {
 		throw e;
 		console.error(e);
@@ -105,9 +99,8 @@ export const searchController = function (e) {
 
 }
 
-export const clearSearchController = async function (){
+export const clearSearchController = function (){
 	setState('query', '');
-	await imagesController();
 }
 
 

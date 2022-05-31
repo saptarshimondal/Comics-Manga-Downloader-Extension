@@ -17,6 +17,22 @@ const fetchImages = function () {
 }
 
 
+const generatePDF = function (filename, images) {
+      
+  let markup = "";
+
+  images.forEach(function (img) {
+
+    markup += `<page size='A4'><img src='${img.src}'/></page>`
+  })
+
+  document.body.innerHTML = markup;
+  document.title = filename;
+
+  window.print();
+}
+
+
 
 const handler = function (data) {
   if(data.method === 'fetchImages'){
@@ -24,6 +40,12 @@ const handler = function (data) {
     
     return Promise.resolve(images)
   }
+
+  else if(data.method === 'generatePDF'){
+    generatePDF(data.filename, data.images)
+  }
+
+  return false;
 }
 
 browser.runtime.onMessage.addListener(handler)
