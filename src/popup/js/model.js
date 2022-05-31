@@ -17,58 +17,21 @@ export const getState = (key) => {
 };
 
 
-export const fetchImages = async () => {
-	const getAllImageUrls = `
-		if(typeof imgs !== undefined){
+export const initState = (images) => {
+	const imgData = [];
 
-			const imgs = document.querySelectorAll("img"); 
-
-			const imgData = [];
-
-			for(let img of imgs){
-				imgData.push(img.src)
-			}
-
-			const canvases = document.querySelectorAll('canvas');
-
-			for(let canvas of canvases){
-				imgData.push(canvas.toDataURL('image/jpeg'))
-			}
-
-			imgData;
-		}
-		else{
-			imgData;
-		}
-	`;
-
-	try {
-		const images = await browser.tabs.executeScript({
-		  code: getAllImageUrls
-		  // file: contentScript
-		});
-
-		if(typeof images[0] !== 'object'){
-			return false;
-		}
-
-		const imgData = [];
-
-		images[0].forEach(function (img) {
-			imgData.push({
-				'src': img,
-			})
+	images.forEach(function (img) {
+		imgData.push({
+			'src': img,
 		})
+	})
 
 
-		setState('images', imgData);
-		setState('filteredImages', imgData.map(({src}) => {
-			return {'src': src, 'checked': true}
-		}));
+	setState('images', imgData);
+	setState('filteredImages', imgData.map(({src}) => {
+		return {'src': src, 'checked': true}
+	}));
 
-		return getState('filteredImages');
+	return true;
 
-	} catch(e) {
-		throw e;
-	}
 }

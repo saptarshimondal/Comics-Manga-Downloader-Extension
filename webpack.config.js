@@ -79,7 +79,7 @@ module.exports = {
           // spawn-loader is preventing us from doing that.
           {
             loader: 'imports-loader',
-            query: '__babelPolyfill=babel-polyfill'
+            query: '__babelPolyfill=idempotent-babel-polyfill'
           }
         ]
       },

@@ -2,16 +2,16 @@ import ImagesView from './views/ImagesView';
 import DownloadView from './views/DownloadView';
 import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
-import { fetchImages, getState, setState } from './model';
+import { initState, getState, setState } from './model';
 import { dump } from './helpers';
 import imagesHTML from '../images.html';
+import contentScript from '../../content/index.js';
 
 const imagesController = async function () {
 
 	ImagesView.showLoader();
 
-	const response = await fetchImages();
-
+	const response = getState('filteredImages');
 
 	if(!response){
 		ImagesView.showError();
@@ -54,36 +54,29 @@ export const selectAllController = function (checkVal) {
 	DownloadView.render(images);
 }
 
-const downloaderController = async function (fileName) {
+const downloaderController = async function (fileName, callback) {
 
 	try {
-		const images = getState('filteredImages').filter(img => img.checked)
+		const images = getState('filteredImages').filter(img => img.checked);
 
-		const code = `
+		await browser.tabs.create({url: imagesHTML});
 
-			const images = JSON.parse('${JSON.stringify(images)}')		
-			
-			let markup = "";
-
-			images.forEach(function (img) {
-
-				markup += "<page size='A4'><img src='"+img.src+"'/></page>"
-			})
-
-			document.body.innerHTML = markup;
-			document.title = "${fileName}";
-
-			window.print();
-
-		`;
-
-		await browser.tabs.create({url: imagesHTML})
-
-		return browser.tabs.executeScript({
-			code: code
+		await browser.tabs.executeScript({
+			file: contentScript
 		});
+
+		const tabs = await browser.tabs.query({active: true, currentWindow: true});
+
+		callback();
+
+		return browser.tabs.sendMessage(tabs[0].id, {
+			"method": "generatePDF", 
+			"filename": fileName,
+			"images": images
+		});
+
 	} catch(e) {
-		throw e;
+		// throw e;
 		console.error(e);
 	}
 
@@ -105,14 +98,15 @@ export const searchController = function (e) {
 
 }
 
-export const clearSearchController = async function (){
+export const clearSearchController = function (){
 	setState('query', '');
-	await imagesController();
 }
 
 
-export const init = function () {
-	ImagesView.addHandlerRender(imagesController);
+export const init = function (images) {
+	initState(images)
+	// ImagesView.addHandlerRender(imagesController);
+	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
 	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);

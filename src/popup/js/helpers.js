@@ -35,3 +35,17 @@ export const hasSomeParentTheClass = function(element, classname) {
         return false
     }
 }
+
+export const triggerEvent = function (el, type) {
+    // IE9+ and other modern browsers
+    if ('createEvent' in document) {
+        var e = document.createEvent('HTMLEvents');
+        e.initEvent(type, false, true);
+        el.dispatchEvent(e);
+    } else {
+        // IE8
+        var e = document.createEventObject();
+        e.eventType = type;
+        el.fireEvent('on' + e.eventType, e);
+    }
+}

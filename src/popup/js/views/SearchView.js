@@ -1,5 +1,5 @@
 import View from "./View";
-import {dump} from '../helpers'; 
+import {dump, triggerEvent} from '../helpers'; 
 
 class SearchView extends View {
 
@@ -19,6 +19,7 @@ class SearchView extends View {
 		this._clearQuery.addEventListener('click', () => {
 			handler();
 			this._parent.value = "";
+			triggerEvent(this._parent, "keyup")
 		});
 	}
 }

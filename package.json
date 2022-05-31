@@ -38,6 +38,7 @@
     "webpack-sources": "1.0.1"
   },
   "dependencies": {
+    "idempotent-babel-polyfill": "^7.4.4",
     "jspdf": "^2.5.1"
   }
 }
