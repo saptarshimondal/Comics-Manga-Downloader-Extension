@@ -2,7 +2,7 @@ import ImagesView from './views/ImagesView';
 import DownloadView from './views/DownloadView';
 import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
-import { fetchImages, getState, setState } from './model';
+import { initState, getState, setState } from './model';
 import { dump } from './helpers';
 import imagesHTML from '../images.html';
 
@@ -10,7 +10,7 @@ const imagesController = async function () {
 
 	ImagesView.showLoader();
 
-	const response = await fetchImages();
+	const response = getState('filteredImages');
 
 
 	if(!response){
@@ -111,8 +111,10 @@ export const clearSearchController = async function (){
 }
 
 
-export const init = function () {
-	ImagesView.addHandlerRender(imagesController);
+export const init = function (images) {
+	initState(images)
+	// ImagesView.addHandlerRender(imagesController);
+	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
 	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);
