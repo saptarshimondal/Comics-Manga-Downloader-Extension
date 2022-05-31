@@ -43,6 +43,8 @@ const handler = function (data) {
 
   else if(data.method === 'generatePDF'){
     generatePDF(data.filename, data.images)
+
+    return Promise.resolve("Page created successfully!")
   }
 
   return false;

@@ -54,7 +54,7 @@ export const selectAllController = function (checkVal) {
 	DownloadView.render(images);
 }
 
-const downloaderController = async function (fileName) {
+const downloaderController = async function (fileName, callback) {
 
 	try {
 		const images = getState('filteredImages').filter(img => img.checked);
@@ -66,18 +66,17 @@ const downloaderController = async function (fileName) {
 		});
 
 		const tabs = await browser.tabs.query({active: true, currentWindow: true});
-		const response = await browser.tabs.sendMessage(tabs[0].id, {
+
+		callback();
+
+		return browser.tabs.sendMessage(tabs[0].id, {
 			"method": "generatePDF", 
 			"filename": fileName,
 			"images": images
 		});
 
-		console.log(response)
-
-		return Promise.resolve("Page created successfully!")
-
 	} catch(e) {
-		throw e;
+		// throw e;
 		console.error(e);
 	}
 
