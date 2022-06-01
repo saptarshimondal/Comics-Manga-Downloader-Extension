@@ -357,8 +357,9 @@
         </div>
         <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px;">
           <input type="text" id="fileName" placeholder="File name" title="Set the name of the file you want to download as pdf." value="">
-          <select name="" title="Select a driver to download the pdf">
-            <option value="">Built-In Browser</option>
+          <select id="downloadType" title="Select a driver to download the pdf">
+            <option value="jspdf" selected>Direct Download</option>
+            <option value="browser">Built-In Browser</option>
           </select>
           <input type="button" id="download" class="accent " disabled="" title="Select some images to download first" value="Download">
         </div>

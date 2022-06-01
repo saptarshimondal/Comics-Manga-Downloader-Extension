@@ -1,3 +1,4 @@
+import { srcType } from '../popup/js/helpers';
 
 (function () {
 
@@ -9,90 +10,107 @@
   const fetchImages = function () {
     const imgs = document.querySelectorAll("img"); 
 
-    const imgData = [];
+    const images = [];
 
-    for(let img of imgs){
-      imgData.push(img.src)
+    for(const img of imgs){
+      images.push({
+        'src': img.src,
+        'type': srcType(img.src)
+      })
     }
 
     const canvases = document.querySelectorAll('canvas');
+    let id = images.length;
 
     for(let canvas of canvases){
-      imgData.push(canvas.toDataURL('image/jpeg'))
+      images.push({
+        'src': canvas.toDataURL('image/jpeg'),
+        'type': 'data'
+      })
     }
 
-    return imgData;
+    return images;
   }
 
 
-  const generatePDF = function (filename, images) {
-        
+  const downloadUsingBrowser = function ({ fileName, images }) {
     let markup = "";
 
-    images.forEach(function (img) {
+      images.forEach(function (img) {
 
-      markup += `<page size='A4'><img src='${img.src}'/></page>`
-    })
+        markup += `<page size='A4'><img src='${img.src}'/></page>`
+      })
 
-    /*document.body.innerHTML = markup;
-    document.title = filename;
+      document.querySelector('html').innerHTML = '';
 
-    window.print();*/
+      const fullMarkup = `
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>${fileName}</title>
 
-    document.querySelector('html').innerHTML = '';
+            <style type="text/css">
 
-    const fullMarkup = `
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>${filename}</title>
-
-          <style type="text/css">
-
-            body {
-              background: rgb(204,204,204); 
-            }
-            page[size="A4"] {
-              background: white;
-              width: 21cm;
-              height: 29.7cm;
-              display: block;
-              margin: 0 auto;
-              // margin-bottom: 0.5cm;
-              box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
-            }
-            @media print {
-              body, page[size="A4"] {
-                margin: 0;
-                box-shadow: 0;
+              body {
+                background: rgb(204,204,204); 
               }
-            }
+              page[size="A4"] {
+                background: white;
+                width: 21cm;
+                height: 29.7cm;
+                display: block;
+                margin: 0 auto;
+                // margin-bottom: 0.5cm;
+                box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
+              }
+              @media print {
+                body, page[size="A4"] {
+                  margin: 0;
+                  box-shadow: 0;
+                }
+              }
 
-            img {
-                width: 100%; /* or any custom size */
-                height: 100%; 
-                object-fit: contain;
-            }
-          </style>
-        </head>
-        <body>
-            <div id="printDiv">
-              ${markup}
-            </div>
-        </body>
-    `
+              img {
+                  width: 100%; /* or any custom size */
+                  height: 100%; 
+                  object-fit: contain;
+              }
+            </style>
+          </head>
+          <body>
+              <div id="printDiv">
+                ${markup}
+              </div>
+          </body>
+      `
 
-    document.querySelector('html').innerHTML = fullMarkup;
-
-
-    Promise.all(Array.from(document.querySelectorAll('img')).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))).then(() => {
-        window.print();
-    });
+      document.querySelector('html').innerHTML = fullMarkup;
 
 
-    window.addEventListener('afterprint', function () {
-      window.location.reload()
-    })
+      Promise.all(Array.from(document.querySelectorAll('img')).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))).then(() => {
+          window.print();
+      });
+
+
+      window.addEventListener('afterprint', function () {
+        window.location.reload()
+      })
+  }
+
+
+  const downloadUsingJSPdf = function ({ fileName, images }) {
+    
+  }
+
+
+  const generatePDF = function ({ fileName, images, downloadType }) {
+
+    if(downloadType === 'browser'){
+      downloadUsingBrowser({ fileName, images });
+    }
+    if(downloadType === 'jspdf'){
+      downloadUsingJSPdf({ fileName, images });
+    }
 
   }
 
@@ -108,7 +126,7 @@
     else if(data.method === 'generatePDF'){
 
       // console.log(data.filename, data.images)
-      generatePDF(data.filename, data.images)
+      generatePDF(data)
 
       return Promise.resolve("Page created successfully!")
     }
