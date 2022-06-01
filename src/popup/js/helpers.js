@@ -49,3 +49,8 @@ export const triggerEvent = function (el, type) {
         el.fireEvent('on' + e.eventType, e);
     }
 }
+
+
+export const srcType = (src) => {
+    return src.startsWith("http") ? 'url' : 'data';
+}

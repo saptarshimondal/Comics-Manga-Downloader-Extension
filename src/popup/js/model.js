@@ -18,18 +18,14 @@ export const getState = (key) => {
 
 
 export const initState = (images) => {
-	const imgData = [];
 
-	images.forEach(function (img) {
-		imgData.push({
-			'src': img,
-		})
-	})
-
-
-	setState('images', imgData);
-	setState('filteredImages', imgData.map(({src}) => {
-		return {'src': src, 'checked': true}
+	setState('images', images);
+	setState('filteredImages', images.map(({src, type}) => {
+		return {
+			'src': src, 
+			'type': type,
+			'checked': true
+		}
 	}));
 
 	return true;

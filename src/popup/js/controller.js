@@ -16,7 +16,7 @@ const imagesController = async function () {
 		ImagesView.showError();
 	}
 	else if(!response.length){
-		ImagesView.showError("No images found on this page!");	
+		ImagesView.showError("No images found on this page!");
 	}
 	else{
 		const images = response.filter(i => i.src !== "")
@@ -42,8 +42,12 @@ const imagesSelectionController = function (id, checkVal) {
 export const selectAllController = function (checkVal) {
 
 	let images = getState('filteredImages');
-	images = images.map(({src, checked}) => {
-		return {'src': src, 'checked': checkVal}
+	images = images.map(({src, type, checked}) => {
+		return {
+			'src': src, 
+			'type': type, 
+			'checked': checkVal
+		}
 	})
 
 	setState('filteredImages', images);
@@ -53,7 +57,7 @@ export const selectAllController = function (checkVal) {
 	DownloadView.render(images);
 }
 
-const downloaderController = async function (fileName, callback) {
+const downloaderController = async function (fileName, downloadType, callback) {
 
 	try {
 		const images = getState('filteredImages').filter(img => img.checked);
@@ -68,12 +72,12 @@ const downloaderController = async function (fileName, callback) {
 
 		return browser.tabs.sendMessage(tab.id, {
 			"method": "generatePDF", 
-			"filename": fileName,
+			"fileName": fileName,
+			"downloadType": downloadType,
 			"images": images
 		});
 
 	} catch(e) {
-		// throw e;
 		console.error(e);
 	}
 
@@ -84,8 +88,15 @@ export const searchController = function (e) {
 	const query = setState('query', e.target.value);
 	let images = getState('images');
 
-	const filteredImages = images.filter(img => img.src.startsWith(query)).map(({src}) => {
-		return {'src': src, 'checked': true}
+	const filteredImages = images.filter(({src, type}) => {
+		if(type === 'url'){
+			return src.startsWith(query)
+		}
+		if(type === 'data'){
+			return src;
+		}
+	}).map(({src, type}) => {
+		return {'src': src, 'type': type, 'checked': true}
 	})
 
 	setState('filteredImages', filteredImages);
