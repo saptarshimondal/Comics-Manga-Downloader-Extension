@@ -1,26 +1,3 @@
-export const getBase64Image = (img) => {
-  var canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  var ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-  return canvas.toDataURL();
-}
-
-export const imageUrlToBase64 = async (url) => {
-
-    const data = await fetch(url);
-    const blob = await data.blob();
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-
-    return reader;
-    /*reader.onload = () => {
-        const base64data = reader.result;
-        return base64data;
-    }*/
-}
-
 export const dump = function (variable, type = false) {
     const op = JSON.stringify(variable, null, 4)
     console.log(type ? `(${typeof variable}) ${op}` : op)
@@ -52,5 +29,41 @@ export const triggerEvent = function (el, type) {
 
 
 export const srcType = (src) => {
-    return src.startsWith("http") ? 'url' : 'data';
+    return src.startsWith("data") ? 'data' : 'url';
+}
+
+
+const formats={
+    png: "iVBORw0KGgo=",
+    jpeg: "/9g=",
+    gif: "R0lG",
+    "svg+xml": "PA=="
+};
+const defaultFormat="png";
+
+const bytesToBase64=byteArray=>
+    btoa(byteArray.reduce((a,e)=>a+String.fromCharCode(e),""))
+
+const getFormat=byteArray=>{
+    for(let format in formats){
+        let header=formats[format];
+        
+        if(bytesToBase64(byteArray.slice(0,atob(header).length))==header){
+            return format;
+        }
+    }
+    return defaultFormat;
+};
+
+export const getBase64Image = async (srcUrl) => {
+    let response=await fetch(srcUrl,{
+        method:"GET",
+        mode:"cors",
+        cache:"default"
+    });
+    let arrayBuffer=await response.arrayBuffer();
+    let bytes=[].slice.call(new Uint8Array(arrayBuffer));
+    let base64=`data:image/${getFormat(bytes)};base64,`+bytesToBase64(bytes);
+
+    return base64;
 }
