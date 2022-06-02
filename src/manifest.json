@@ -23,9 +23,6 @@
   },
   "permissions": [
     "<all_urls>",
-    "activeTab",
-    "contextMenus",
-    "clipboardRead",
-    "clipboardWrite"
+    "activeTab"
   ]
 }
