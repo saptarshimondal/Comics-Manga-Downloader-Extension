@@ -23,9 +23,14 @@ class DownloadView extends View {
 	addHandlerDownloader(handler){		
 		this._parent.addEventListener('click', async () => {
 			if(this._fileName.value){
-				await handler(this._fileName.value, this._downloadType.value, function () {
-					window.close()
+				const response = await handler(this._fileName.value, this._downloadType.value, function () {
+					// window.close()
 				});
+
+				if (this._downloadType.value === 'jspdf') {
+					console.log('WOW!! -')
+					console.log(response);
+				}
 			}
 			else{
 				this._fileName.focus();

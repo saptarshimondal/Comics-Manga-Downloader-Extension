@@ -1,4 +1,4 @@
-import { srcType } from '../popup/js/helpers';
+import { srcType, getBase64Image } from '../popup/js/helpers';
 
 (function () {
 
@@ -12,12 +12,14 @@ import { srcType } from '../popup/js/helpers';
 
     const images = [];
 
-    for(const img of imgs){
+    imgs.forEach(function (img, i) {
+      img.dataset.download_id = i;
+
       images.push({
         'src': img.src,
         'type': srcType(img.src)
       })
-    }
+    })
 
     const canvases = document.querySelectorAll('canvas');
     let id = images.length;
@@ -98,21 +100,27 @@ import { srcType } from '../popup/js/helpers';
   }
 
 
-  const downloadUsingJSPdf = function ({ fileName, images }) {
-    
+  const downloadUsingJSPdf = async function ({ fileName, images }) {
+
+    // const data = await getBase64Image(images.at(2).src)
+
+    const promises = images.map(async ({src, type, checked}) => {
+
+      if(type === 'url'){
+        return {
+          'src': await getBase64Image(src),
+          'type': type,
+          'checked': checked
+        }
+      }
+      else{
+        return {src, type, checked};
+      }
+    });
+
+    return await Promise.all(promises);
   }
 
-
-  const generatePDF = function ({ fileName, images, downloadType }) {
-
-    if(downloadType === 'browser'){
-      downloadUsingBrowser({ fileName, images });
-    }
-    if(downloadType === 'jspdf'){
-      downloadUsingJSPdf({ fileName, images });
-    }
-
-  }
 
 
 
@@ -125,10 +133,16 @@ import { srcType } from '../popup/js/helpers';
 
     else if(data.method === 'generatePDF'){
 
-      // console.log(data.filename, data.images)
-      generatePDF(data)
+      const {fileName, images, downloadType} = data;
 
-      return Promise.resolve("Page created successfully!")
+      if(downloadType === 'browser'){
+        downloadUsingBrowser({ fileName, images });
+        return Promise.resolve("Page created successfully!")
+      }
+      if(downloadType === 'jspdf'){
+        return Promise.resolve(downloadUsingJSPdf({ fileName, images }));
+      }
+
     }
 
     return false;
