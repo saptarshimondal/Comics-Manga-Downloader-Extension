@@ -111,11 +111,24 @@ export const clearSearchController = function (){
 }
 
 
-export const init = function (images) {
-	initState(images)
+export const downloadSingleImageController = async function (url) {
+
+	const image = await fetch(url)
+  	const imageBlob = await image.blob()
+  	const imageURL = URL.createObjectURL(imageBlob)
+
+  	const title = getState('title');
+
+  	return {title, imageURL};
+}
+
+
+export const init = function ({images, title}) {
+	initState({images, title})
 	// ImagesView.addHandlerRender(imagesController);
 	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
+	ImagesView.addHandlerDownloadSingleImage(downloadSingleImageController);
 	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);
 	SearchView.addHandlerSearch(searchController);

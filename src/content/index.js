@@ -6,7 +6,7 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
     return false;
   }
   window.hasRun = true;
-  
+
   const fetchImages = function () {
     const imgs = document.querySelectorAll("img"); 
 
@@ -34,6 +34,9 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
     return images;
   }
 
+  const fetchTitle = function () {
+    return document.title;
+  }
 
   const downloadUsingBrowser = function ({ fileName, images }) {
     let markup = "";
@@ -102,6 +105,13 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
+    /*let port = browser.runtime.connect({ name: 'webextensions-boilerplate' });
+
+    port.postMessage({ 'method': 'downloadUsingJSPdf', 'fileName': fileName, 'images' : images });
+    port.onMessage.addListener(function(data) {
+      console.log(data);
+    });*/
+
     // const data = await getBase64Image(images.at(2).src)
 
     const promises = images.map(async ({src, type, checked}) => {
@@ -131,7 +141,7 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
       return Promise.resolve(images)
     }
 
-    else if(data.method === 'generatePDF'){
+    if(data.method === 'generatePDF'){
 
       const {fileName, images, downloadType} = data;
 
@@ -143,6 +153,10 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
         return Promise.resolve(downloadUsingJSPdf({ fileName, images }));
       }
 
+    }
+
+    if(data.method === 'fetchTitle'){
+      return Promise.resolve(fetchTitle());
     }
 
     return false;
