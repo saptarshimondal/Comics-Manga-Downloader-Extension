@@ -105,15 +105,6 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
-    /*let port = browser.runtime.connect({ name: 'webextensions-boilerplate' });
-
-    port.postMessage({ 'method': 'downloadUsingJSPdf', 'fileName': fileName, 'images' : images });
-    port.onMessage.addListener(function(data) {
-      console.log(data);
-    });*/
-
-    // const data = await getBase64Image(images.at(2).src)
-
     const promises = images.map(async ({src, type, checked}) => {
 
       if(type === 'url'){
