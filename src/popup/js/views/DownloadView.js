@@ -27,10 +27,7 @@ class DownloadView extends View {
 					// window.close()
 				});
 
-				if (this._downloadType.value === 'jspdf') {
-					console.log('WOW!! -')
-					console.log(response);
-				}
+				console.log(response)				
 			}
 			else{
 				this._fileName.focus();

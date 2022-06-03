@@ -12,7 +12,9 @@ import contentScript from '../../content/index.js';
 	    
 		const images = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchImages"});
 
-		init(images);
+		const title = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchTitle"});
+
+		init({images, title});
 
 	} catch(e) {
 		console.error(e.message);
