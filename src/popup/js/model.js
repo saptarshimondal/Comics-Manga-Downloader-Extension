@@ -2,6 +2,7 @@ import contentScript from '../../content/index.js';
 
 const state = {
 	data: [
+		{ 'title': '' },
 		{ 'images': [] },
 		{ 'filteredImages': [] },
 		{ 'query': '' },
@@ -17,19 +18,16 @@ export const getState = (key) => {
 };
 
 
-export const initState = (images) => {
-	const imgData = [];
+export const initState = ({images, title}) => {
 
-	images.forEach(function (img) {
-		imgData.push({
-			'src': img,
-		})
-	})
-
-
-	setState('images', imgData);
-	setState('filteredImages', imgData.map(({src}) => {
-		return {'src': src, 'checked': true}
+	setState('title', title);
+	setState('images', images);
+	setState('filteredImages', images.map(({src, type}) => {
+		return {
+			'src': src, 
+			'type': type,
+			'checked': true
+		}
 	}));
 
 	return true;
