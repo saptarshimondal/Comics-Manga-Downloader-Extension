@@ -5,6 +5,7 @@ class DownloadView extends View {
 	constructor(selector){
 		super(selector);
 		this._fileName = document.querySelector('#fileName')
+		this._downloadType = document.querySelector('#downloadType')
 	}
 
 	_buildMarkUp(){
@@ -22,9 +23,9 @@ class DownloadView extends View {
 	addHandlerDownloader(handler){		
 		this._parent.addEventListener('click', async () => {
 			if(this._fileName.value){
-				await handler(this._fileName.value, function () {
+				await handler(this._fileName.value, this._downloadType.value, function () {
 					window.close()
-				});
+				});				
 			}
 			else{
 				this._fileName.focus();
