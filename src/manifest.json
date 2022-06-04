@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
-  "name": "ComicsDownloaderPlugin",
-  "version": "1.1.0",
-  "description": "",
-  "author": "Saptarshi Mondal",
+  "name": "{{prop-loader?name!../package.json}}",
+  "version": "{{prop-loader?version!../package.json}}",
+  "description": "{{prop-loader?description!../package.json}}",
+  "author": "{{prop-loader?author!../package.json}}",
   "options_ui": {
     "page": "{{./options/index.html}}"
   },
