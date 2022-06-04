@@ -1,135 +1,288 @@
-# Browser Extension Webpack Boilerplate
+<div id="top"></div>
+<!--
+*** Thanks for checking out the Best-README-Template. If you have a suggestion
+*** that would make this better, please fork the repo and create a pull request
+*** or simply open an issue with the tag "enhancement".
+*** Don't forget to give the project a star!
+*** Thanks again! Now go create something AMAZING! :D
+-->
 
-A basic boilerplate for creating [WebExtensions API-based Browser Extensions](https://developer.mozilla.org/en-US/Add-ons/WebExtensions) using [Webpack](https://webpack.js.org/).
 
-## Supported browsers
 
-Extensions created this way are, at least in theory, compatible with the following browsers:
+<!-- PROJECT SHIELDS -->
+<!--
+*** I'm using markdown "reference style" links for readability.
+*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
+*** See the bottom of this document for the declaration of the reference variables
+*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
+*** https://www.markdownguide.org/basic-syntax/#reference-style-links
+-->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
--   Google Chrome
--   Chromium
--   Mozilla Firefox
--   Firefox for Android
--   Opera
--   Microsoft Edge
 
-Actual compatibility will depend on the APIs you used. [MDN provides a comprehensive comparison](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Browser_support_for_JavaScript_APIs).
 
-While [Chrome's APIs currently differ](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Porting_a_Google_Chrome_extension)
-from the standard, this boilerplate utilises [webextension-polyfill](https://github.com/mozilla/webextension-polyfill)
-which allows you to seamlessly use the `browser.*` APIs regardless of browser.
-The polyfill is automatically included by Webpack when needed.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension">
+    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-## Webpack rules
-The Webpack configuration currently handles the following file types:
+  <h3 align="center">Comics / Manga Downloader Extension</h3>
 
--   **.jpg .jpeg, .png, .gif, .eot, .otf, .svg, .ttf, .woff and .woff2** are all
-    treated as static assets using [file-loader](https://github.com/webpack-contrib/file-loader).
--   **.html** files are parsed using [html-loader](https://github.com/webpack-contrib/html-loader)
-    - they are minified and `<link>`, `<img>` and `<script>` files are used to
-    find other files that need to be parsed.
--   **.css** files are parsed using [css-loader](https://github.com/webpack-contrib/css-loader).
--   **.js** files are treated differently depending on their file name:
-    -   Files named **index.js** are treated using [spawn-loader](https://github.com/erikdesjardins/spawn-loader).
-        In other words, *each **index.js** is treated a separate entry-point*,
-        with all of its dependencies bundled resolved and bundled separately
-        and independently from other files.
-    -   Any other **js** file will be transpiled using Babel and treated as a
-        normal dependency, bundled with the files that `import` it.
--   **manifest.json** is the main entry point. Other files (icons, scripts,
-    pages) referred inside of it will be separately bundled by Webpack depending
-    on the rules above.
+  <p align="center">
+    A cross browser extension to download comics / manga as pdf file from any site!
+    <br />
+    <a href="#how-to-use"><strong>How to use »</strong></a>
+    <br />
+    <br />
+    <!-- <a href="https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension">View Demo</a> -->
+    <!-- · -->
+    <a href="https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues">Request Feature</a>
+  </p>
+</div>
 
-## Repo structure
 
-### webpack.config.js
-The main [Webpack configuration](https://webpack.js.org/configuration/) of the
-project. Unlike most web project, the entry point of this project is the
-**manifest.json** file - which is also the first file read by the browser and
-technically the only required file, per the WebExtensions standard.
 
-### package.json
-The [Node.js package.json](https://docs.npmjs.com/files/package.json) file is
-required by Webpack - it contains the ["dev dependencies"](https://docs.npmjs.com/files/package.json#devdependencies)
-of the project - most notably, Webpack itself and the various loaders used.
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#how-to-use">How To Use</a>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+      	<li><a href="#installation">Installation</a>
+      		<ul>
+      			<li><a href="#google-chrome">Google Chrome</a></li>
+      			<li><a href="#firefox">Firefox</a></li>
+      		</ul>
+      	</li>
+        <li><a href="#development-setup">Development Setup</a>
+        	<ul>
+      			<li><a href="#prerequisites">Prerequisites</a></li>
+      			<li><a href="#setting-up">Setting up</a></li>
+      		</ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
-### src/manifest.json
-The manifest.json file, [as defined in the WebExtensions standard](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json).
 
-Many of the properties, such as the *name* and *author* fields, are pulled from
-**package.json** using [prop-loader](https://github.com/erikdesjardins/prop-loader),
-to avoid having these diverge from each other.
 
-Keep in mind that, since the **manifest.json** is the only entrypoint, it's also
-what tells Webpack which other files - most notably, HTML and JS - need to be
-compiled.
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-### src/background
-Contains the script running as [background script](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Anatomy_of_a_WebExtension#Background_scripts)
-for the extension. Since scripts are bundled with Webpack, it's advisable to
-have only a single entry script here, **index.js**, which loads other
-dependencies using `import` statements (as seen with importing the `getOS`
-function from **getos.js**).
+[![Comics / Manga Downloader Screen Shot][product-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension) 
 
-### src/content
-Contains [content script(s)](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts)
-injected into other web pages.
+A simple cross browser extension to download comics / manga as pdf file from any site.
 
-Content scripts can be injected using the `content_scripts` property in
-**manifest.json** or by calling the [executeScript](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/Tabs/executeScript)
-method on a tab. In this set-up, the latter is used and the content script is
-injected from **src/popup/index.js**.
+**Although this extension was created to download comics / manga, it will also work on any website which has `<img>` or `<canvas>` attribute.**
 
-If you have more than one content script, you must put each in a separate
-directory, as the entry point of content scripts (like with other stand-alone JS
-files) should always be named **index.js**.
+_Currently it is using built in `window.print()` method to save the images as pdf, but in near future I will implement direct download option._
 
-### src/icon
-The main extension icon, as referenced in **manifest.json**. Different browsers
-have different size requirements, so it's advisable to consult the documentation
-of the browser(s) you're targetting to ensure all the required sizes are
-provided.
+<p align="right">(<a href="#top">back to top</a>)</p>
 
-### src/popup
-The [popup dialog](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/user_interface/Popups).
-In this set-up, the popup dialog is defined in **manifest.json** to appear when
-the browser action is pressed - this is normally a button that's always visible
-next to the address bar.
+<!-- HOW TO USE -->
+## How to use
+* Visit any website
+* Let all the images load completely
+* Click on the extension icon to open the extension popup
+* Select the images you want to include in your output pdf
+* Set a file name and click on "Download" button
+* It will open the default browser print popup
+* Select "Destination" - "Save as pdf"
+* Click on "More setting" 
+* Set "Margins" to - "None"
+* Finally click on "Save" button to save the pdf file.
 
-This folder also serves to demonstrate a "full" page, with its own HTML, JS and
-CSS file. 
+<p align="right">(<a href="#top">back to top</a>)</p>
 
-### src/options
-The [options page](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/user_interface/Options_pages).
-In this set-up, a static html file that has no scripts attached to it. The same
-set-up from the popup dialog can be used to add CSS and JS files to it.
 
-### global.css
-A global CSS file - this file isn't directly referred to in **manifest.json**,
-but is used by several other HTML files. The purpose is to demonstrate how
-this set-up deals with shared resources.
+<!-- GETTING STARTED -->
+## Getting Started
 
-## Developing a new extension
-*It's highly recommended to [get familiar with Webpack](https://webpack.js.org/guides/getting-started/),
-and [read about WebExtensions on MDN](https://developer.mozilla.org/en-US/Add-ons/WebExtensions)
-before you continue.*
+### Installation
 
-1.  [Install Node.js](https://nodejs.org/en/download/).
-1.  Install Webpack: `npm install -g webpack`
-1.  Clone this repository.
-1.  Remove CONTRIBUTING.md, README.md and, optionally, replace LICENSE with a
-    compatible license.
-1.  Change the package's name and description on `package.json`
-1.  Change the name of your extension on `src/manifest.json`
-1.  Run `npm install`
-1.  Run `npm run start`
-1.  Load your extension on Chrome following:
-    1.  Navigate to [chrome://extensions/](chrome://extensions/)
-    1.  Check `Developer mode`
-    1.  Click on `Load unpacked extension`
-    1.  Select the `dist` folder.
-1.  Have fun.
+* Visit [releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page
+* Download the binary file from the latest release.
+[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+* Unzip the downloaded file
 
+#### Google Chrome
+
+* Open Google chrome and visit - `chrome://extensions` page
+* Turn on "Developer mode"
+* Click on "Load Unpacked" and select the unzipped folder. 
+
+[![Installation Chrome Screen Shot][installation-chrome-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+
+* To pin the extension on tool bar click on extensions icon and then click on pin icon next to the extension
+[![Pin Chrome Screen Shot][pin-chrome-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+
+
+#### Firefox
+
+* Open Firefox and visit - `about:debugging#/runtime/this-firefox` page
+* Click on "Load Temporary Add-on..." button
+* Select **"manifest.json"** file inside of the unzipped folder.
+
+_Please note that firefox will remove the extension if you restart the browser_
+
+
+### Development Setup
+
+Please read the following to setup the project locally for development.
+
+#### Prerequisites
+
+* [Install node](https://nodejs.org/en/download/)
+* Install Webpack
+	```sh
+	npm install -g webpack
+	```
+
+#### Setting up
+
+1. Clone the repo
+   ```sh
+   git clone https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension.git
+   ```
+
+2. Install NPM packages
+   ```sh
+   npm install
+   ```
+
+3. To start developing run -
+   ```sh
+   npm run dev
+   ```
+   It will bundle the project under **"dist"** directory and watch for any code modification.
+
+   If you don't want to start the watcher, then run - 
+   ```sh
+   npm run start
+   ```
+   It will just bundle the project under **"dist"** directory without running the watcher.
+
+4. If you want to run the project on chrome, then you have to visit `chrome://extensions` page and reload the extension manually to update the latest code changes.
+
+5. If you want to run the project on firefox, then you can run -
+	```sh
+	npm run ext
+	``` 
+	It will open firefox browser automatically with the extension pre installed and watch for any code changes. If you change anything in code then the extension will be reloaded automatically.
+
+6. If you want to pack the extension, then you can run -
+	```sh
+	npm run pack-ext
+	```
+	It will create a **.zip** file under **"web-ext-artifacts"** directory. You can use this to distribute your extension.
+
+
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- ROADMAP -->
+## Roadmap
+
+- [x] Filtering images by url
+- [x] Add select all checkbox
+- [ ] Migrate to Manifest v3
+- [ ] Add "Direct download" feature
+
+See the [open issues](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues) for a full list of proposed features (and known issues).
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- CONTRIBUTING -->
 ## Contributing
-Patches / contributions are welcome! Please read CONTRIBUTING.md to find out
-more.
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- LICENSE -->
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- CONTACT -->
+## Contact
+
+Saptarshi Mondal - [@Saptarshi_77](https://twitter.com/Saptarshi_77) - mondalsaptarshi7@gmail.com
+
+Project Link: [https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+
+Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* [Web extensions webpack boilerplate](https://github.com/fstanis/webextensions-webpack-boilerplate)
+* [Readme template](https://github.com/othneildrew/Best-README-Template)
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
+[contributors-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
+[forks-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/network/members
+[stars-shield]: https://img.shields.io/github/stars/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
+[stars-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/stargazers
+[issues-shield]: https://img.shields.io/github/issues/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
+[issues-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues
+[license-shield]: https://img.shields.io/github/license/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
+[license-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/blob/master/LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://linkedin.com/in/saptarshi-mondal-732986126
+[product-screenshot]: images/screenshot.jpg
+[release-screenshot]: images/release.png
+[installation-chrome-screenshot]: images/installation-chrome.gif
+[pin-chrome-screenshot]: images/pin-chrome.gif
