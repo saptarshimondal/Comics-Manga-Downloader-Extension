@@ -1,6 +1,6 @@
 /dist
 /web-ext-artifacts
-
+*sublime*
 # Logs
 logs
 *.log
