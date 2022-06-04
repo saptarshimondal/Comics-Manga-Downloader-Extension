@@ -124,7 +124,7 @@ _Currently it is using built in `window.print()` method to save the images as pd
 
 * Visit [releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page
 * Download the binary file from the latest release.
-[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
 * Unzip the downloaded file
 
 #### Google Chrome
