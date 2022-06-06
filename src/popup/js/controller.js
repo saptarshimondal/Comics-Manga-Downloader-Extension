@@ -4,7 +4,7 @@ import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
 import { initState, getState, setState } from './model';
 import { dump } from './helpers';
-import contentScript from '../../content/index.js';
+// import contentScript from '../../content/index.js';
 
 const imagesController = async function () {
 
@@ -65,7 +65,7 @@ const downloaderController = async function (fileName, downloadType, callback) {
 		const [tab] = await browser.tabs.query({active: true, currentWindow: true});
 
 		await browser.tabs.executeScript(tab.id, {
-			file: contentScript
+			file: 'content.bundle.js'
 		});
 
 		callback();
