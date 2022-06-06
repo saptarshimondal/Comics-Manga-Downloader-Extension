@@ -16,14 +16,17 @@ const package = require('./package');
 
 const options = {
 	mode: "production",
+  performance: {
+    hints: false
+  },
 	entry: {
-    popup: path.join(__dirname, "src", "popup", "js", "index.js"),
-    // options: path.join(__dirname, "src", "options", "index.js"),
-    // background: path.join(__dirname, "src", "background", "index.js")
-    content: path.join(__dirname, "src", "content", "index.js")
+    popup: path.join(SRC_DIR, "popup", "js", "index.js"),
+    // options: path.join(SRC_DIR, "options", "index.js"),
+    // background: path.join(SRC_DIR, "background", "index.js")
+    content: path.join(SRC_DIR, "content", "index.js")
   },
   output: {
-    path: path.join(__dirname, "dist"),
+    path: DIST_DIR,
     filename: "[name].bundle.js"
   },
   module: {
@@ -42,7 +45,14 @@ const options = {
         test: /\.html$/,
         use: ["html-loader"],
         exclude: /node_modules/
-      }
+      },
+      {
+        test: /\.(js)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
     ]
   },
   plugins: [
@@ -81,17 +91,17 @@ const options = {
     	}]
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "popup", "index.html"),
+      template: path.join(SRC_DIR, "popup", "index.html"),
       filename: "popup.html",
       chunks: ["popup"]
     }),
     /*new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "options", "index.html"),
+      template: path.join(SRC_DIR, "options", "index.html"),
       filename: "options.html",
       chunks: ["options"]
     }),*/
     /*new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "background.html"),
+      template: path.join(SRC_DIR, "background.html"),
       filename: "background.html",
       chunks: ["background"]
     }),*/
@@ -100,7 +110,13 @@ const options = {
       browser: 'webextension-polyfill'
     }),
 
-  ]
+  ],
+  externals: {
+    // only define the dependencies you are NOT using as externals!
+    canvg: "canvg",
+    html2canvas: "html2canvas",
+    dompurify: "dompurify"
+  }
 };
 
 module.exports = options;
