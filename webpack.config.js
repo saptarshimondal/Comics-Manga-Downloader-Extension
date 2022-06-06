@@ -1,11 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-const MinifyPlugin = require('babel-minify-webpack-plugin');
-
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-
 const DIST_DIR = path.resolve(__dirname, 'dist');
 const SRC_DIR = path.resolve(__dirname, 'src');
 const ASSET_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2'];
@@ -13,107 +7,100 @@ const MANIFEST_FILE = 'manifest.json';
 
 const manifestPath = path.join(SRC_DIR, MANIFEST_FILE);
 
-module.exports = {
-  output: {
-    filename: MANIFEST_FILE,
-    path: DIST_DIR,
+const CleanWebpackPlugin = require("clean-webpack-plugin").CleanWebpackPlugin;
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+// const WriteFilePlugin = require("write-file-webpack-plugin");
+
+const package = require('./package');
+
+const options = {
+	mode: "production",
+	entry: {
+    popup: path.join(__dirname, "src", "popup", "js", "index.js"),
+    // options: path.join(__dirname, "src", "options", "index.js"),
+    // background: path.join(__dirname, "src", "background", "index.js")
+    content: path.join(__dirname, "src", "content", "index.js")
   },
-  entry: manifestPath,
+  output: {
+    path: path.join(__dirname, "dist"),
+    filename: "[name].bundle.js"
+  },
   module: {
     rules: [
+      /*{
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
+        exclude: /node_modules/
+      },*/
+      {
+        test: new RegExp('.(' + ASSET_EXTENSIONS.join('|') + ')$'),
+        type: 'asset/resource',
+        exclude: /node_modules/
+      },
       {
         test: /\.html$/,
-        use: [
-          'file-loader',
-          'extract-loader',
-          {
-            loader: 'html-loader',
-            options: {
-              minimize: IS_PRODUCTION,
-              attrs: [
-                'link:href',
-                'script:src',
-                'img:src'
-              ]
-            }
-          }
-        ]
-      },
-      {
-        test: /\.css$/,
-        use: [
-          'file-loader',
-          'extract-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              minimize: IS_PRODUCTION
-            }
-          }
-        ]
-      },
-      {
-        test: /\/index\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: [{
-          loader: 'spawn-loader',
-          options: {
-            name: '[hash].js'
-          }
-        }]
-      },
-      {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: [
-          {
-            loader: 'babel-loader',
-            options: {
-              presets: [
-                ['env', { modules: false }]
-              ]
-            }
-          },
-          // Ensure babel-polyfill is imported
-          // Normally, this would just be an entry point, but relying on
-          // spawn-loader is preventing us from doing that.
-          {
-            loader: 'imports-loader',
-            query: '__babelPolyfill=idempotent-babel-polyfill'
-          }
-        ]
-      },
-      {
-        test: new RegExp('\.(' + ASSET_EXTENSIONS.join('|') + ')$'),
-        use: {
-          loader: 'file-loader',
-          options: {
-            outputPath: 'assets/'
-          }
-        }
-      },
-      {
-        test: manifestPath,
-        use: ExtractTextPlugin.extract([
-          'raw-loader',
-          'extricate-loader',
-          'interpolate-loader'
-        ])
-      },
-      // Workaround for https://github.com/webpack/webpack/issues/5828
-      {
-        test: require.resolve('webextension-polyfill'),
-        use: 'imports-loader?browser=>undefined'
+        use: ["html-loader"],
+        exclude: /node_modules/
       }
     ]
   },
   plugins: [
-    new CleanWebpackPlugin(DIST_DIR),
-    new ExtractTextPlugin(MANIFEST_FILE),
+  	// clean the dist folder
+    new CleanWebpackPlugin({
+      cleanStaleWebpackAssets: false
+    }),
+    new CopyWebpackPlugin(
+	    {
+	    	patterns: [
+	    		{
+	      		from: "src/manifest.json",
+			      transform: function (content, path) {
+			        // generates the manifest file using the package.json informations
+			        const manifest = JSON.parse(content.toString())
+			        manifest.name = package.name;
+			        manifest.version = package.version;
+			        manifest.description = package.description;
+			        manifest.author = package.author;
+			        return Buffer.from(JSON.stringify(manifest))
+			      },
+	    		}
+	    	]
+	    }
+    ),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/icon",
+    		to: "icon"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/icon",
+    		to: "popup/icon"
+    	}]
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "popup", "index.html"),
+      filename: "popup.html",
+      chunks: ["popup"]
+    }),
+    /*new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "options", "index.html"),
+      filename: "options.html",
+      chunks: ["options"]
+    }),*/
+    /*new HtmlWebpackPlugin({
+      template: path.join(__dirname, "src", "background.html"),
+      filename: "background.html",
+      chunks: ["background"]
+    }),*/
+    // new WriteFilePlugin(),
     new webpack.ProvidePlugin({
       browser: 'webextension-polyfill'
     }),
-    IS_PRODUCTION ? new MinifyPlugin() : /* no-op */ new Function()
-  ],
-  devtool: IS_PRODUCTION ? '' : 'inline-source-map'
+
+  ]
 };
+
+module.exports = options;
