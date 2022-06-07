@@ -1,4 +1,5 @@
-import { srcType, getBase64Image } from '../popup/js/helpers';
+import { srcType, getBase64Image, dump } from '../popup/js/helpers';
+import { jsPDF } from 'jspdf';
 
 (function () {
 
@@ -105,27 +106,67 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
+    let image = undefined;
+
     const promises = images.map(async ({src, type, checked}) => {
 
       if(type === 'url'){
+
+        image = await getBase64Image(src)
+
         return {
-          'src': await getBase64Image(src),
+          'src': image.data,
+          'mime': image.mime,
           'type': type,
           'checked': checked
         }
       }
-      else{
+      else{ 
         return {src, type, checked};
       }
     });
 
-    return await Promise.all(promises);
+    const imagesData = await Promise.all(promises);
+
+
+    let imgProps = undefined,
+        pdfWidth = undefined,
+        pdfHeight = undefined;
+
+    const doc = new jsPDF("p", "mm", "a4");
+
+    const data = imagesData.reduce((doc, img) => {
+      imgProps= doc.getImageProperties(img.src);
+      pdfWidth = doc.internal.pageSize.getWidth();
+      pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      doc.addImage(img.src, img.mime, 0, 0, pdfWidth, pdfHeight);
+      doc.addPage();
+
+      return doc;
+    }, doc);
+
+
+    // const pdfData = doc.output('blob', `${fileName}.pdf`);
+
+    
+
+
+
+    // saveAs(pdfData, `${fileName}.pdf`)
+
+    // var blob = new Blob(["Hello, world!"], {type: "application/octet-stream"});
+
+    // saveAs(blob, `${fileName}.pdf`);
+
+    data.save(`${fileName}.pdf`);
+
   }
 
 
 
 
-  const handler = function (data) {
+  const handler = function (data) {   
     if(data.method === 'fetchImages'){
       const images = fetchImages();
       

@@ -65,5 +65,10 @@ export const getBase64Image = async (srcUrl) => {
     let bytes=[].slice.call(new Uint8Array(arrayBuffer));
     let base64=`data:image/${getFormat(bytes)};base64,`+bytesToBase64(bytes);
 
-    return base64;
+    // console.log(srcUrl, base64)
+
+    return {
+        "mime": getFormat(bytes), 
+        "data": base64
+    };
 }
