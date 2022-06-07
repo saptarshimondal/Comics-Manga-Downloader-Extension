@@ -1,5 +1,6 @@
 import { srcType, getBase64Image, dump } from '../popup/js/helpers';
 import { jsPDF } from 'jspdf';
+import FileSaver from 'file-saver'
 
 (function () {
 
@@ -146,18 +147,15 @@ import { jsPDF } from 'jspdf';
       return doc;
     }, doc);
 
-
-    // const pdfData = doc.output('blob', `${fileName}.pdf`);
-
-    
-
-
-
-    // saveAs(pdfData, `${fileName}.pdf`)
-
-    // var blob = new Blob(["Hello, world!"], {type: "application/octet-stream"});
-
-    // saveAs(blob, `${fileName}.pdf`);
+    // Hack for firefox user to forcefully downloading the file from blob
+    // https://github.com/parallax/jsPDF/issues/3391#issuecomment-1133782322 
+    if (navigator.userAgent.toLowerCase().includes('firefox')) {
+      console.warn('Firefox detected - using alternative PDF save way...')
+      let blob = doc.output('blob')
+      blob = blob.slice(0, blob.size, 'application/octet-stream') 
+      FileSaver.saveAs(blob, `${fileName}.pdf`)
+      return
+    }
 
     data.save(`${fileName}.pdf`);
 

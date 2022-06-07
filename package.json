@@ -29,6 +29,7 @@
     "webpack-cli": "^4.9.2"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
     "jspdf": "^2.5.1"
   }
 }
