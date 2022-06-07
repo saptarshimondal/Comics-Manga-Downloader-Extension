@@ -15,10 +15,11 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const package = require('./package');
 
 const options = {
-	mode: "production",
-  performance: {
+	mode: "development",
+  /*performance: {
     hints: false
-  },
+  },*/
+  devtool: 'cheap-module-source-map', // to fix EvalError
 	entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
     // options: path.join(SRC_DIR, "options", "index.js"),
@@ -27,7 +28,8 @@ const options = {
   },
   output: {
     path: DIST_DIR,
-    filename: "[name].bundle.js"
+    filename: "[name].bundle.js",
+    publicPath: "/",
   },
   module: {
     rules: [
