@@ -21,5 +21,8 @@
   "permissions": [
     "<all_urls>",
     "activeTab"
-  ]
+  ],
+  "background": {
+    "scripts": ["background.bundle.js"]
+  }
 }

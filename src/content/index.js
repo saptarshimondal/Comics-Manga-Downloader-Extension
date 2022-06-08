@@ -107,84 +107,65 @@ import FileSaver from 'file-saver'
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
-    let image = undefined,
-        mime = undefined;
+    let port = browser.runtime.connect({ name: 'conn-get-images-data' });
 
-    const promises = images.map(async ({src, type, checked}) => {
+    port.postMessage({ method: 'getImagesData', images: images });
+    port.onMessage.addListener(function({type, data}) {
+      if(type === 'success'){
 
-      if(type === 'url'){
+        const imagesData = data;
+        const doc = new jsPDF("p", "mm", "a4");
 
-        image = await getBase64Image(src)
+        let imgProps = undefined,
+            maxWidth = doc.internal.pageSize.getWidth(),
+            maxHeight = doc.internal.pageSize.getHeight(),
+            aspectRatio = undefined,
+            marginX = 0,
+            marginY = 0;
 
-        return {
-          'src': image.data,
-          'mime': image.mime,
-          'type': type,
-          'checked': checked
+        const updatedDoc = imagesData.reduce((doc, img) => {
+          if(img.src !== null){
+            imgProps = doc.getImageProperties(img.src);
+            
+            aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight);
+
+            if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
+              marginX = (maxWidth - aspectRatio.width) / 2;
+            }
+            else{
+              marginX = 0
+            }
+
+            if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
+              marginY = (maxHeight - aspectRatio.height) / 2;
+            }
+            else{
+              marginY = 0;
+            }
+
+            doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
+            doc.addPage();
+          }
+
+
+          return doc;
+        }, doc);
+
+        // Hack for firefox user to forcefully downloading the file from blob
+        // https://github.com/parallax/jsPDF/issues/3391#issuecomment-1133782322 
+        if (navigator.userAgent.toLowerCase().includes('firefox')) {
+          console.warn('Firefox detected - using alternative PDF save way...')
+          let blob = doc.output('blob')
+          blob = blob.slice(0, blob.size, 'application/octet-stream') 
+          FileSaver.saveAs(blob, `${fileName}.pdf`)
+          return
         }
+
+        updatedDoc.save(`${fileName}.pdf`);
       }
-      else{ 
-        mime = getBase64ImageMime(src);
-        return {src, mime, type, checked};
-      }
+
+      port.disconnect()
     });
-
-    const imagesData = await Promise.all(promises);
-
-    const doc = new jsPDF("p", "mm", "a4");
-
-    let imgProps = undefined,
-        maxWidth = doc.internal.pageSize.getWidth(),
-        maxHeight = doc.internal.pageSize.getHeight(),
-        aspectRatio = undefined,
-        marginX = 0,
-        marginY = 0;
-
-    // console.log(maxWidth, maxHeight)
-
-    
-
-    const data = imagesData.reduce((doc, img) => {
-      if(img.src !== null){
-        imgProps = doc.getImageProperties(img.src);
-        
-        aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight)
-
-        // console.log(aspectRatio, maxWidth)
-
-        if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
-          marginX = (maxWidth - aspectRatio.width) / 2;
-        }
-        else{
-          marginX = 0
-        }
-
-        if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
-          marginY = (maxHeight - aspectRatio.height) / 2;
-        }
-        else{
-          marginY = 0;
-        }
-
-        doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
-        doc.addPage();
-      }
-
-
-      return doc;
-    }, doc);
-
-    // Hack for firefox user to forcefully downloading the file from blob
-    // https://github.com/parallax/jsPDF/issues/3391#issuecomment-1133782322 
-    if (navigator.userAgent.toLowerCase().includes('firefox')) {
-      console.warn('Firefox detected - using alternative PDF save way...')
-      let blob = doc.output('blob')
-      blob = blob.slice(0, blob.size, 'application/octet-stream') 
-      FileSaver.saveAs(blob, `${fileName}.pdf`)
-      return
-    }
-
-    data.save(`${fileName}.pdf`);
 
   }
 
