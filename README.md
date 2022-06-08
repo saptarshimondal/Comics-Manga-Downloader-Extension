@@ -97,8 +97,6 @@ A simple cross browser extension to download comics / manga as pdf file from any
 
 **Although this extension was created to download comics / manga, it will also work on any website which has `<img>` or `<canvas>` attribute.**
 
-_Currently it is using built in `window.print()` method to save the images as pdf, but in near future I will implement direct download option._
-
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- HOW TO USE -->
@@ -209,8 +207,8 @@ Please read the following to setup the project locally for development.
 
 - [x] Filtering images by url
 - [x] Add select all checkbox
+- [x] Add "Direct download" feature
 - [ ] Migrate to Manifest v3
-- [ ] Add "Direct download" feature
 
 See the [open issues](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues) for a full list of proposed features (and known issues).
 
@@ -261,6 +259,7 @@ Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
+* [Chrome Extension Webpack Boilerplate](https://github.com/samuelsimoes/chrome-extension-webpack-boilerplate)
 * [Web extensions webpack boilerplate](https://github.com/fstanis/webextensions-webpack-boilerplate)
 * [Readme template](https://github.com/othneildrew/Best-README-Template)
 
