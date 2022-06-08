@@ -69,7 +69,7 @@ const downloaderController = async function (fileName, downloadType, callback = 
 			file: './content.bundle.js'
 		});
 
-		// callback();
+		callback();
 
 		// console.log('ok')		
 
@@ -79,13 +79,6 @@ const downloaderController = async function (fileName, downloadType, callback = 
 			"downloadType": downloadType,
 			"images": images
 		});
-
-
-		/*images.forEach(function (img) {
-			
-		})*/
-
-		// console.log(imagesData)
 
 	} catch(e) {
 		console.error(e);
