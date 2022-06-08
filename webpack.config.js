@@ -23,7 +23,7 @@ const options = {
 	entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
     // options: path.join(SRC_DIR, "options", "index.js"),
-    // background: path.join(SRC_DIR, "background", "index.js")
+    background: path.join(SRC_DIR, "background", "index.js"),
     content: path.join(SRC_DIR, "content", "index.js")
   },
   output: {
