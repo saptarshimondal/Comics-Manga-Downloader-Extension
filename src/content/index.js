@@ -1,4 +1,4 @@
-import { srcType, getBase64Image, calculateAspectRatioFit, dump } from '../popup/js/helpers';
+import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump } from '../popup/js/helpers';
 import { jsPDF } from 'jspdf';
 import FileSaver from 'file-saver'
 
@@ -107,7 +107,8 @@ import FileSaver from 'file-saver'
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
-    let image = undefined;
+    let image = undefined,
+        mime = undefined;
 
     const promises = images.map(async ({src, type, checked}) => {
 
@@ -123,7 +124,8 @@ import FileSaver from 'file-saver'
         }
       }
       else{ 
-        return {src, type, checked};
+        mime = getBase64ImageMime(src);
+        return {src, mime, type, checked};
       }
     });
 
@@ -143,28 +145,31 @@ import FileSaver from 'file-saver'
     
 
     const data = imagesData.reduce((doc, img) => {
-      imgProps= doc.getImageProperties(img.src);
-      
-      aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight)
+      if(img.src !== null){
+        imgProps = doc.getImageProperties(img.src);
+        
+        aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight)
 
-      // console.log(aspectRatio, maxWidth)
+        // console.log(aspectRatio, maxWidth)
 
-      if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
-        marginX = (maxWidth - aspectRatio.width) / 2;
-      }
-      else{
-        marginX = 0
+        if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
+          marginX = (maxWidth - aspectRatio.width) / 2;
+        }
+        else{
+          marginX = 0
+        }
+
+        if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
+          marginY = (maxHeight - aspectRatio.height) / 2;
+        }
+        else{
+          marginY = 0;
+        }
+
+        doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
+        doc.addPage();
       }
 
-      if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
-        marginY = (maxHeight - aspectRatio.height) / 2;
-      }
-      else{
-        marginY = 0;
-      }
-
-      doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
-      doc.addPage();
 
       return doc;
     }, doc);
@@ -202,7 +207,8 @@ import FileSaver from 'file-saver'
         return Promise.resolve("Page created successfully!")
       }
       if(downloadType === 'jspdf'){
-        return Promise.resolve(downloadUsingJSPdf({ fileName, images }));
+        downloadUsingJSPdf({ fileName, images })
+        return Promise.resolve("Pdf downloaded successfully!");
       }
 
     }
