@@ -3,10 +3,10 @@
   "version": "1.1.0",
   "description": "A cross browser extension to download comics / manga as pdf file from any site.",
   "author": "Saptarshi Mondal <mondalsaptarshi7@gmail.com>",
-  "license": "0BSD",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fstanis/webextensions-webpack-boilerplate.git"
+    "url": "https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension"
   },
   "scripts": {
     "start": "webpack --config webpack.config.js",
@@ -14,32 +14,22 @@
     "ext": "web-ext run --source-dir ./dist/",
     "pack-ext": "web-ext build --overwrite-dest --source-dir ./dist"
   },
-  "//": "[TODO] Remove webpack-sources when this is fixed: https://github.com/webpack/webpack-sources/issues/28",
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-minify-webpack-plugin": "^0.2.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
-    "clean-webpack-plugin": "^0.1.17",
-    "css-loader": "^0.28.7",
-    "extract-loader": "^1.0.1",
-    "extract-text-webpack-plugin": "^3.0.1",
-    "extricate-loader": "^2.0.0",
-    "file-loader": "^1.1.5",
-    "html-loader": "^0.5.1",
-    "imports-loader": "^0.7.1",
-    "interpolate-loader": "^2.0.0",
-    "prop-loader": "^1.0.0",
-    "raw-loader": "^0.5.1",
-    "spawn-loader": "^4.0.0",
+    "@babel/core": "^7.18.2",
+    "@babel/preset-env": "^7.18.2",
+    "babel-loader": "^8.2.5",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "html-loader": "^3.1.0",
+    "html-webpack-plugin": "^5.5.0",
+    "imports-loader": "^4.0.0",
     "web-ext": "^6.8.0",
-    "webextension-polyfill": "^0.2.1",
-    "webpack": "^3.7.1",
-    "webpack-sources": "1.0.1"
+    "webextension-polyfill": "^0.9.0",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "idempotent-babel-polyfill": "^7.4.4",
+    "file-saver": "^2.0.5",
     "jspdf": "^2.5.1"
   }
 }

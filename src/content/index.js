@@ -1,4 +1,6 @@
-import { srcType, getBase64Image } from '../popup/js/helpers';
+import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump } from '../popup/js/helpers';
+import { jsPDF } from 'jspdf';
+import FileSaver from 'file-saver'
 
 (function () {
 
@@ -105,27 +107,91 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
 
   const downloadUsingJSPdf = async function ({ fileName, images }) {
 
+    let image = undefined,
+        mime = undefined;
+
     const promises = images.map(async ({src, type, checked}) => {
 
       if(type === 'url'){
+
+        image = await getBase64Image(src)
+
         return {
-          'src': await getBase64Image(src),
+          'src': image.data,
+          'mime': image.mime,
           'type': type,
           'checked': checked
         }
       }
-      else{
-        return {src, type, checked};
+      else{ 
+        mime = getBase64ImageMime(src);
+        return {src, mime, type, checked};
       }
     });
 
-    return await Promise.all(promises);
+    const imagesData = await Promise.all(promises);
+
+    const doc = new jsPDF("p", "mm", "a4");
+
+    let imgProps = undefined,
+        maxWidth = doc.internal.pageSize.getWidth(),
+        maxHeight = doc.internal.pageSize.getHeight(),
+        aspectRatio = undefined,
+        marginX = 0,
+        marginY = 0;
+
+    // console.log(maxWidth, maxHeight)
+
+    
+
+    const data = imagesData.reduce((doc, img) => {
+      if(img.src !== null){
+        imgProps = doc.getImageProperties(img.src);
+        
+        aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight)
+
+        // console.log(aspectRatio, maxWidth)
+
+        if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
+          marginX = (maxWidth - aspectRatio.width) / 2;
+        }
+        else{
+          marginX = 0
+        }
+
+        if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
+          marginY = (maxHeight - aspectRatio.height) / 2;
+        }
+        else{
+          marginY = 0;
+        }
+
+        doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
+        doc.addPage();
+      }
+
+
+      return doc;
+    }, doc);
+
+    // Hack for firefox user to forcefully downloading the file from blob
+    // https://github.com/parallax/jsPDF/issues/3391#issuecomment-1133782322 
+    if (navigator.userAgent.toLowerCase().includes('firefox')) {
+      console.warn('Firefox detected - using alternative PDF save way...')
+      let blob = doc.output('blob')
+      blob = blob.slice(0, blob.size, 'application/octet-stream') 
+      FileSaver.saveAs(blob, `${fileName}.pdf`)
+      return
+    }
+
+    data.save(`${fileName}.pdf`);
+
   }
 
 
 
 
-  const handler = function (data) {
+  const handler = function (data) {   
     if(data.method === 'fetchImages'){
       const images = fetchImages();
       
@@ -141,7 +207,8 @@ import { srcType, getBase64Image } from '../popup/js/helpers';
         return Promise.resolve("Page created successfully!")
       }
       if(downloadType === 'jspdf'){
-        return Promise.resolve(downloadUsingJSPdf({ fileName, images }));
+        downloadUsingJSPdf({ fileName, images })
+        return Promise.resolve("Pdf downloaded successfully!");
       }
 
     }

@@ -65,5 +65,21 @@ export const getBase64Image = async (srcUrl) => {
     let bytes=[].slice.call(new Uint8Array(arrayBuffer));
     let base64=`data:image/${getFormat(bytes)};base64,`+bytesToBase64(bytes);
 
-    return base64;
+    if(!bytes.length) base64 = null;
+
+    return {
+        "mime": getFormat(bytes), 
+        "data": base64
+    };
+}
+
+export const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+
+    var ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+
+    return { width: srcWidth*ratio, height: srcHeight*ratio };
+}
+
+export const getBase64ImageMime = (data) => {
+    return data.split(';')[0].split('/').at(-1)
 }
