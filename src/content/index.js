@@ -1,4 +1,4 @@
-import { srcType, getBase64Image, dump } from '../popup/js/helpers';
+import { srcType, getBase64Image, calculateAspectRatioFit, dump } from '../popup/js/helpers';
 import { jsPDF } from 'jspdf';
 import FileSaver from 'file-saver'
 
@@ -129,19 +129,41 @@ import FileSaver from 'file-saver'
 
     const imagesData = await Promise.all(promises);
 
+    const doc = new jsPDF("p", "mm", "a4");
 
     let imgProps = undefined,
-        pdfWidth = undefined,
-        pdfHeight = undefined;
+        maxWidth = doc.internal.pageSize.getWidth(),
+        maxHeight = doc.internal.pageSize.getHeight(),
+        aspectRatio = undefined,
+        marginX = 0,
+        marginY = 0;
 
-    const doc = new jsPDF("p", "mm", "a4");
+    // console.log(maxWidth, maxHeight)
+
+    
 
     const data = imagesData.reduce((doc, img) => {
       imgProps= doc.getImageProperties(img.src);
-      pdfWidth = doc.internal.pageSize.getWidth();
-      pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight)
 
-      doc.addImage(img.src, img.mime, 0, 0, pdfWidth, pdfHeight);
+      // console.log(aspectRatio, maxWidth)
+
+      if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
+        marginX = (maxWidth - aspectRatio.width) / 2;
+      }
+      else{
+        marginX = 0
+      }
+
+      if(Math.round(aspectRatio.height) < Math.round(maxHeight)){
+        marginY = (maxHeight - aspectRatio.height) / 2;
+      }
+      else{
+        marginY = 0;
+      }
+
+      doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
       doc.addPage();
 
       return doc;
