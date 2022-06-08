@@ -4,8 +4,6 @@ import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
 import { initState, getState, setState } from './model';
 import { dump } from './helpers';
-// import contentScript from '../../content/index.js';
-// import { jsPdf } from 'jspdf';
 
 const imagesController = async function () {
 
@@ -69,9 +67,7 @@ const downloaderController = async function (fileName, downloadType, callback = 
 			file: './content.bundle.js'
 		});
 
-		callback();
-
-		// console.log('ok')		
+		callback();	
 
 		const imagesData =  await browser.tabs.sendMessage(tab.id, {
 			"method": "generatePDF", 
