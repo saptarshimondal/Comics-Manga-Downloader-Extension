@@ -123,7 +123,7 @@ import FileSaver from 'file-saver'
             marginX = 0,
             marginY = 0;
 
-        const updatedDoc = imagesData.reduce((doc, img) => {
+        const updatedDoc = imagesData.reduce((doc, img, index) => {
           if(img.src !== null){
             imgProps = doc.getImageProperties(img.src);
             
@@ -144,7 +144,7 @@ import FileSaver from 'file-saver'
             }
 
             doc.addImage(img.src, img.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
-            doc.addPage();
+            if(index !== imagesData.length - 1) doc.addPage();
           }
 
 
