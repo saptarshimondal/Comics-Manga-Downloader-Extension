@@ -1,11 +1,11 @@
 import {init} from './controller';
 import {dump} from './helpers';
-import contentScript from '../../content/index.js';
+// import contentScript from '../../content/index.js'; 
 
 (async function () {
 	try {
 		await browser.tabs.executeScript({
-		  file: contentScript
+		  file: './content.bundle.js'
 		});
 
 		const tabs = await browser.tabs.query({active: true, currentWindow: true})
