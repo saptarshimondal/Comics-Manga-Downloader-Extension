@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "",
   "version": "",
   "description": "",
@@ -10,7 +10,7 @@
     "96": "./icon/96.png",
     "128": "./icon/128.png"
   },
-  "browser_action": {
+  "action": {
     "default_popup": "popup.html",
     "default_icon": {
       "16": "./popup/icon/16.png",
@@ -19,10 +19,13 @@
     }
   },
   "permissions": [
-    "<all_urls>",
-    "activeTab"
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "background": {
-    "scripts": ["background.bundle.js"]
+    "service_worker": "background.bundle.js"
   }
 }
