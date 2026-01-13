@@ -4,11 +4,13 @@ import {dump} from './helpers';
 
 (async function () {
 	try {
-		await browser.tabs.executeScript({
-		  file: './content.bundle.js'
+		const tabs = await browser.tabs.query({active: true, currentWindow: true});
+		
+		// Inject content script using Manifest V3 API
+		await browser.scripting.executeScript({
+			target: { tabId: tabs[0].id },
+			files: ['./content.bundle.js']
 		});
-
-		const tabs = await browser.tabs.query({active: true, currentWindow: true})
 	    
 		const images = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchImages"});
 
