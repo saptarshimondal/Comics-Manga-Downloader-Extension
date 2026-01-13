@@ -10,19 +10,14 @@ const manifestPath = path.join(SRC_DIR, MANIFEST_FILE);
 const CleanWebpackPlugin = require("clean-webpack-plugin").CleanWebpackPlugin;
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-// const WriteFilePlugin = require("write-file-webpack-plugin");
 
 const package = require('./package');
 
 const options = {
 	mode: "development",
-  /*performance: {
-    hints: false
-  },*/
-  devtool: 'cheap-module-source-map', // to fix EvalError
+  devtool: 'cheap-module-source-map',
 	entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
-    // options: path.join(SRC_DIR, "options", "index.js"),
     background: path.join(SRC_DIR, "background", "index.js"),
     content: path.join(SRC_DIR, "content", "index.js")
   },
@@ -33,11 +28,6 @@ const options = {
   },
   module: {
     rules: [
-      /*{
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"],
-        exclude: /node_modules/
-      },*/
       {
         test: new RegExp('.(' + ASSET_EXTENSIONS.join('|') + ')$'),
         type: 'asset/resource',
@@ -75,13 +65,8 @@ const options = {
 			        manifest.description = package.description;
 			        manifest.author = package.author;
 			        
-			        // Firefox compatibility: Firefox doesn't fully support service_worker in V3 yet
-			        // Convert service_worker to scripts for Firefox compatibility
-			        // Chrome will still work with scripts in V3 (though service_worker is preferred)
-			        if (manifest.background && manifest.background.service_worker) {
-			          manifest.background.scripts = [manifest.background.service_worker];
-			          delete manifest.background.service_worker;
-			        }
+			        // Chrome V3: keep service_worker (required for Chrome)
+			        // Don't convert to scripts
 			        
 			        return Buffer.from(JSON.stringify(manifest, null, 2))
 			      },
@@ -106,24 +91,12 @@ const options = {
       filename: "popup.html",
       chunks: ["popup"]
     }),
-    /*new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "options", "index.html"),
-      filename: "options.html",
-      chunks: ["options"]
-    }),*/
-    /*new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "background.html"),
-      filename: "background.html",
-      chunks: ["background"]
-    }),*/
-    // new WriteFilePlugin(),
     new webpack.ProvidePlugin({
       browser: 'webextension-polyfill'
     }),
 
   ],
   externals: {
-    // only define the dependencies you are NOT using as externals!
     canvg: "canvg",
     html2canvas: "html2canvas",
     dompurify: "dompurify"
