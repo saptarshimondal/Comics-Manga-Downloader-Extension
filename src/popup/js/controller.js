@@ -63,8 +63,10 @@ const downloaderController = async function (fileName, downloadType, callback = 
 
 		const [tab] = await browser.tabs.query({active: true, currentWindow: true});
 
-		await browser.tabs.executeScript(tab.id, {
-			file: './content.bundle.js'
+		// Inject content script using Manifest V3 API
+		await browser.scripting.executeScript({
+			target: { tabId: tab.id },
+			files: ['./content.bundle.js']
 		});
 
 		callback();	
