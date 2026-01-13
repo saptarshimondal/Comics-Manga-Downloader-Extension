@@ -171,31 +171,67 @@ Please read the following to setup the project locally for development.
    npm install
    ```
 
-3. To start developing run -
+3. **Build Commands** (one-time builds):
+   
+   For Firefox:
    ```sh
-   npm run dev
+   npm run start:firefox
    ```
-   It will bundle the project under **"dist"** directory and watch for any code modification.
-
-   If you don't want to start the watcher, then run - 
+   
+   For Chrome:
    ```sh
-   npm run start
+   npm run start:chrome
    ```
-   It will just bundle the project under **"dist"** directory without running the watcher.
+   
+   These commands will bundle the project under **"dist"** directory without running the watcher.
 
-4. If you want to run the project on chrome, then you have to visit `chrome://extensions` page and reload the extension manually to update the latest code changes.
+4. **Development Commands** (watch mode - auto-rebuild on file changes):
+   
+   For Firefox:
+   ```sh
+   npm run dev:firefox
+   ```
+   
+   For Chrome:
+   ```sh
+   npm run dev:chrome
+   ```
+   
+   These commands will bundle the project under **"dist"** directory and watch for any code modification, automatically rebuilding when files change.
 
-5. If you want to run the project on firefox, then you can run -
-	```sh
-	npm run ext
-	``` 
-	It will open firefox browser automatically with the extension pre installed and watch for any code changes. If you change anything in code then the extension will be reloaded automatically.
+5. **Testing the Extension**:
+   
+   For Chrome:
+   - Visit `chrome://extensions` page
+   - Turn on "Developer mode"
+   - Click "Load unpacked" and select the **"dist"** directory
+   - Reload the extension manually to update after code changes
+   
+   For Firefox:
+   ```sh
+   npm run ext
+   ```
+   This will open Firefox browser automatically with the extension pre-installed and watch for any code changes. If you change anything in code, the extension will be reloaded automatically.
 
-6. If you want to pack the extension, then you can run -
-	```sh
-	npm run pack-ext
-	```
-	It will create a **.zip** file under **"web-ext-artifacts"** directory. You can use this to distribute your extension.
+6. **Packaging the Extension** (for distribution):
+   
+   For Firefox only:
+   ```sh
+   npm run pack:firefox
+   ```
+   Creates a **.zip** file under **"web-ext-artifacts/firefox"** directory.
+   
+   For Chrome only:
+   ```sh
+   npm run pack:chrome
+   ```
+   Creates a **.zip** file at **"web-ext-artifacts/chrome/chrome-extension.zip"**.
+   
+   For both Firefox and Chrome:
+   ```sh
+   npm run pack:all
+   ```
+   Creates packaged extensions for both browsers in their respective directories. You can use these to distribute your extension.
 
 
 
@@ -209,7 +245,7 @@ Please read the following to setup the project locally for development.
 - [x] Filtering images by url
 - [x] Add select all checkbox
 - [x] Add "Direct download" feature
-- [ ] Migrate to Manifest v3
+- [x] Migrate to Manifest v3
 
 See the [open issues](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues) for a full list of proposed features (and known issues).
 

@@ -9,10 +9,14 @@
     "url": "https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension"
   },
   "scripts": {
-    "start": "webpack --config webpack.config.js",
-    "dev": "webpack -w --config webpack.config.js",
+    "start:firefox": "webpack --config webpack.config.js",
+    "start:chrome": "webpack --config webpack.config.chrome.js",
+    "dev:firefox": "webpack -w --config webpack.config.js",
+    "dev:chrome": "webpack -w --config webpack.config.chrome.js",
     "ext": "web-ext run --source-dir ./dist/",
-    "pack-ext": "web-ext build --overwrite-dest --source-dir ./dist"
+    "pack:firefox": "webpack --config webpack.config.js && web-ext build --overwrite-dest --source-dir ./dist --artifacts-dir ./web-ext-artifacts/firefox",
+    "pack:chrome": "webpack --config webpack.config.chrome.js && node scripts/pack-chrome.js",
+    "pack:all": "node scripts/pack-all.js"
   },
   "devDependencies": {
     "@babel/core": "^7.18.2",
