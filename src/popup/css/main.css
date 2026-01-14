@@ -78,10 +78,12 @@ html {
 }
 
 body {
-  min-width: 400px;
+  min-width: 500px;
+  width: 500px;
   min-height: 600px;
   font: 13px/1.5em 'Lucida Grande', Arial, sans-serif;
   color: var(--foreground);
+  overflow-x: hidden;
 }
 
 /* https://stackoverflow.com/questions/11243337/a-taller-than-its-img-child */

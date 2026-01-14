@@ -56,21 +56,38 @@ const getFormat=byteArray=>{
 };
 
 export const getBase64Image = async (srcUrl) => {
-    let response=await fetch(srcUrl,{
-        method:"GET",
-        mode:"cors",
-        cache:"default"
-    });
-    let arrayBuffer=await response.arrayBuffer();
-    let bytes=[].slice.call(new Uint8Array(arrayBuffer));
-    let base64=`data:image/${getFormat(bytes)};base64,`+bytesToBase64(bytes);
+    try {
+        let response=await fetch(srcUrl,{
+            method:"GET",
+            mode:"cors",
+            cache:"default"
+        });
+        let arrayBuffer=await response.arrayBuffer();
+        let bytes=[].slice.call(new Uint8Array(arrayBuffer));
+        
+        if(!bytes.length) {
+            return {
+                "mime": null, 
+                "data": null
+            };
+        }
+        
+        const format = getFormat(bytes);
+        // Ensure we have a valid format, default to jpeg if unknown
+        const mime = format && format !== 'UNKNOWN' ? format : 'jpeg';
+        let base64=`data:image/${mime};base64,`+bytesToBase64(bytes);
 
-    if(!bytes.length) base64 = null;
-
-    return {
-        "mime": getFormat(bytes), 
-        "data": base64
-    };
+        return {
+            "mime": mime, 
+            "data": base64
+        };
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        return {
+            "mime": null,
+            "data": null
+        };
+    }
 }
 
 export const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
@@ -81,5 +98,31 @@ export const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight
 }
 
 export const getBase64ImageMime = (data) => {
-    return data.split(';')[0].split('/').at(-1)
+    try {
+        if (!data || typeof data !== 'string') {
+            return null;
+        }
+        // Extract mime type from data URI: data:image/jpeg;base64,...
+        const mimeMatch = data.match(/data:image\/([^;]+)/);
+        if (mimeMatch && mimeMatch[1]) {
+            const mime = mimeMatch[1].toLowerCase();
+            // Validate mime type - jsPDF supports: jpeg, png, webp
+            const validMimes = ['jpeg', 'jpg', 'png', 'webp'];
+            if (validMimes.includes(mime) || validMimes.includes(mime.replace('jpeg', 'jpg'))) {
+                return mime === 'jpg' ? 'jpeg' : mime; // Normalize jpg to jpeg
+            }
+        }
+        // Fallback: try to extract from the format we have
+        const parts = data.split(';')[0].split('/');
+        if (parts.length > 1) {
+            const extracted = parts[parts.length - 1].toLowerCase();
+            if (extracted && extracted !== 'base64') {
+                return extracted === 'jpg' ? 'jpeg' : extracted;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error extracting mime type:', error);
+        return null;
+    }
 }

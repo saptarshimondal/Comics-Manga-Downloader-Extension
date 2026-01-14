@@ -9,14 +9,25 @@
         html,
           body {
             overflow-y: scroll;
+            overflow-x: hidden;
             height: 100%;
             margin: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+          
+          * {
+            box-sizing: border-box;
           }
     
           main {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           .grid {
@@ -47,6 +58,9 @@
             position: sticky;
             padding: 12px;
             background: var(--neutral-lightest);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           #filters_container {
@@ -157,6 +171,9 @@
             padding: var(--images-container-padding);
             padding-top: 9px; /* Account for checkbox 3px margin */
             background: var(--neutral-lighter);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           #select_all_checkbox_container .select_all_checkbox {
@@ -319,6 +336,76 @@
             gap: 4px;
             border-top: 1px solid var(--border-color);
           }
+
+          /* Downloading Overlay */
+          #downloading_overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--neutral-lightest);
+          }
+
+          #downloading_overlay.show {
+            display: flex;
+          }
+
+          #downloading_content {
+            text-align: center;
+            padding: 24px;
+            background: var(--neutral-lightest);
+            color: var(--neutral);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--elevation-3);
+            min-width: 300px;
+            max-width: 400px;
+          }
+
+          #downloading_content h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: var(--neutral);
+          }
+
+          #download_progress_bar {
+            width: 100%;
+            height: 8px;
+            background: var(--input-background);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+          }
+
+          #download_progress_fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+          }
+
+          #download_progress_text {
+            font-size: 14px;
+            color: var(--neutral);
+            margin-top: 8px;
+          }
+
+          #download_error_message {
+            color: #d32f2f;
+            margin-top: 12px;
+            font-size: 14px;
+            display: none;
+          }
+
+          #download_error_message.show {
+            display: block;
+          }
     </style>
 </head>
 
@@ -357,11 +444,11 @@
 
         </div>
 
-        <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: calc(2 * var(--images-container-padding) + 2 * 200px + 1 * var(--images-container-gap));">
+        <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: 100%; max-width: 100%;">
           Loading...
 
         </div>
-        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px;">
+        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px; width: 100%; max-width: 100%; box-sizing: border-box;">
           <input type="text" id="fileName" placeholder="File name" title="Set the name of the file you want to download as pdf." value="">
           <select id="downloadType" title="Select a driver to download the pdf">
             <option value="jspdf">Direct Download</option>
@@ -370,6 +457,19 @@
           <input type="button" id="download" class="accent " disabled="" title="Select some images to download first" value="Download">
         </div>
     </main>
+    
+    <!-- Downloading Overlay -->
+    <div id="downloading_overlay">
+      <div id="downloading_content">
+        <h3>Downloading PDF...</h3>
+        <div id="download_progress_bar">
+          <div id="download_progress_fill"></div>
+        </div>
+        <div id="download_progress_text">Preparing download...</div>
+        <div id="download_error_message"></div>
+      </div>
+    </div>
+    
     <script src="./js/jquery.min.js"></script>
     <script src="./js/select2/select2.min.js"></script>
 </body>
