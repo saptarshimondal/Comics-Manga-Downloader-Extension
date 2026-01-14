@@ -15,6 +15,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Validate package.json
+        run: |
+          if [ ! -f package.json ]; then
+            echo "Error: package.json not found"
+            exit 1
+          fi
+          node -e "const pkg = require('./package.json'); if (!pkg.version) { console.error('Error: package.json missing version'); process.exit(1); }"
 
       - name: Release Please
         uses: googleapis/release-please-action@v4
@@ -22,5 +37,5 @@ jobs:
           LOG_LEVEL: debug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
           target-branch: master
-          release-type: node
