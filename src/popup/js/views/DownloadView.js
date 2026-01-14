@@ -1,4 +1,5 @@
 import View from './View';
+import { getState } from '../model';
 
 class DownloadView extends View {
 
@@ -16,6 +17,83 @@ class DownloadView extends View {
 		this._safetyTimeout = null
 		this._downloadComplete = false
 	}
+	
+	// Set fileName from page title (sanitized for filename)
+	_setFileNameFromTitle() {
+		if (!this._fileName) return;
+		
+		const title = getState('title');
+		if (title && title.trim()) {
+			// Sanitize title for use as filename (compatible with Windows, Linux, macOS)
+			let sanitized = this._sanitizeFileName(title.trim());
+			
+			// Set value only if field is empty (don't overwrite user input)
+			if (!this._fileName.value || this._fileName.value.trim() === '') {
+				this._fileName.value = sanitized;
+			}
+		} else {
+			// Title is missing, ensure field is blank
+			if (!this._fileName.value || this._fileName.value.trim() === '') {
+				this._fileName.value = '';
+			}
+		}
+	}
+	
+	// Sanitize filename to be valid on Windows, Linux, and macOS
+	_sanitizeFileName(fileName) {
+		if (!fileName) return '';
+		
+		// Remove invalid characters for all operating systems
+		// Windows: < > : " / \ | ? *
+		// Linux: / and null byte
+		// macOS: : and /
+		// Also remove control characters (0x00-0x1F) and other problematic characters
+		let sanitized = fileName
+			.replace(/[<>:"/\\|?*\x00-\x1F]/g, '') // Remove invalid characters
+			.replace(/[\x7F-\x9F]/g, ''); // Remove DEL and other control characters
+		
+		// Replace multiple spaces/tabs with single space
+		sanitized = sanitized.replace(/[\s\t]+/g, ' ').trim();
+		
+		// Remove leading/trailing dots and spaces (Windows doesn't allow these)
+		sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, '');
+		
+		// Windows reserved names (case-insensitive)
+		const reservedNames = [
+			'CON', 'PRN', 'AUX', 'NUL',
+			'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+			'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+		];
+		
+		// Check if filename (without extension) is a reserved name
+		const nameWithoutExt = sanitized.split('.')[0].toUpperCase();
+		if (reservedNames.includes(nameWithoutExt)) {
+			// Add underscore to make it valid
+			sanitized = '_' + sanitized;
+		}
+		
+		// Limit length (Windows has 255 char limit for filename, but we'll use 200 to be safe)
+		// This accounts for potential path length and extension
+		const maxLength = 200;
+		if (sanitized.length > maxLength) {
+			// Try to preserve extension if present
+			const lastDot = sanitized.lastIndexOf('.');
+			if (lastDot > 0 && lastDot < sanitized.length - 1) {
+				const ext = sanitized.substring(lastDot);
+				const name = sanitized.substring(0, lastDot);
+				sanitized = name.substring(0, maxLength - ext.length) + ext;
+			} else {
+				sanitized = sanitized.substring(0, maxLength);
+			}
+		}
+		
+		// If after sanitization the string is empty, use a default
+		if (!sanitized || sanitized.trim() === '') {
+			sanitized = 'download';
+		}
+		
+		return sanitized;
+	}
 
 	_buildMarkUp(){
 
@@ -27,6 +105,9 @@ class DownloadView extends View {
 		else{
 			this._parent.setAttribute('disabled', 'disabled');
 		}
+		
+		// Set fileName from title when rendering (title should be available by now)
+		this._setFileNameFromTitle();
 	}
 
 	showDownloadingOverlay() {
@@ -174,10 +255,17 @@ class DownloadView extends View {
 			if(this._isDownloading) return
 			
 			if(this._fileName.value){
+				// Sanitize filename before download to ensure it's valid
+				const sanitizedFileName = this._sanitizeFileName(this._fileName.value.trim());
+				if (sanitizedFileName !== this._fileName.value.trim()) {
+					// Update the field with sanitized version
+					this._fileName.value = sanitizedFileName;
+				}
+				
 				this.showDownloadingOverlay()
 				
 				try {
-					await handler(this._fileName.value, this._downloadType.value, (progress, text) => {
+					await handler(sanitizedFileName, this._downloadType.value, (progress, text) => {
 						// Progress callback for initial setup (before content script takes over)
 						if (progress !== undefined) {
 							this.updateProgress(progress, text)
