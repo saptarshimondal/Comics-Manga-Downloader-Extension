@@ -33,7 +33,7 @@ class ImagesView extends View {
         this._$dimensionFilter = jQuery(this._dimensionFilter);
         this._$dimensionFilter.select2({
           placeholder: 'Select dimensions...',
-          allowClear: true,
+          allowClear: false,
           width: '100%',
           closeOnSelect: false
         });
@@ -41,7 +41,7 @@ class ImagesView extends View {
         this._$dimensionFilter = $(this._dimensionFilter);
         this._$dimensionFilter.select2({
           placeholder: 'Select dimensions...',
-          allowClear: true,
+          allowClear: false,
           width: '100%',
           closeOnSelect: false
         });
@@ -67,7 +67,8 @@ class ImagesView extends View {
         // Select2 is initialized
         this._$dimensionFilter.on('change', (e) => {
           const selectedValues = this._$dimensionFilter.val() || [];
-          // If "All dimensions" is selected, clear all other selections and show all
+          
+          // If "All dimensions" is selected, clear all other selections and show all images
           if (selectedValues.includes('')) {
             // Clear all other selections
             this._$dimensionFilter.val(['']).trigger('change');
@@ -82,12 +83,14 @@ class ImagesView extends View {
         this._dimensionFilter.addEventListener('change', (e) => {
           const selectedOptions = Array.from(e.target.selectedOptions);
           const selectedValues = selectedOptions.map(option => option.value);
-          // If "All dimensions" is selected, clear all other selections and show all
-          if (selectedValues.includes('')) {
-            // Clear all other selections
-            Array.from(e.target.options).forEach(opt => {
-              if (opt.value !== '') opt.selected = false;
-            });
+          // If "All dimensions" is selected or nothing is selected, show all
+          if (selectedValues.length === 0 || selectedValues.includes('')) {
+            // Clear all other selections if "All dimensions" was selected
+            if (selectedValues.includes('')) {
+              Array.from(e.target.options).forEach(opt => {
+                if (opt.value !== '') opt.selected = false;
+              });
+            }
             handler([]);
           } else {
             // Use only the selected dimension values
