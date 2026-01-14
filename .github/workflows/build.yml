@@ -3,6 +3,9 @@ name: Build Extension
 on:
   release:
     types: [published, created]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -15,7 +18,7 @@ jobs:
       - name: 📥 Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -27,10 +30,18 @@ jobs:
 
       - name: ℹ️ Debug info
         run: |
-          echo "Release tag: ${{ github.event.release.tag_name }}"
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            echo "Triggered by: release event"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "Triggered by: tag push"
+          fi
+          echo "Release tag: $TAG"
           echo "Release name: ${{ github.event.release.name }}"
           echo "Release ID: ${{ github.event.release.id }}"
           echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
 
       - name: 🏗️ Build Firefox extension
         run: npm run pack:firefox
@@ -39,8 +50,13 @@ jobs:
         run: npm run pack:chrome
 
       - name: 📝 Prepare release assets
+        id: prepare-assets
         run: |
-          TAG=${{ github.event.release.tag_name }}
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
           echo "Preparing assets for tag: $TAG"
           
           # Create release directory
@@ -76,14 +92,18 @@ jobs:
             echo "❌ Error: One or more required files are missing!"
             exit 1
           fi
+          
+          # Output tag for next step
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Tag set to: ${TAG}"
 
       - name: 📤 Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}
           files: |
-            release-assets/comics-manga-downloader-${{ github.event.release.tag_name }}-firefox.zip
-            release-assets/comics-manga-downloader-${{ github.event.release.tag_name }}-chrome.zip
+            release-assets/comics-manga-downloader-${{ steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}-firefox.zip
+            release-assets/comics-manga-downloader-${{ steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}-chrome.zip
           draft: false
           prerelease: false
         env:
