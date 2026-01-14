@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Release Please
+        uses: googleapis/release-please-action@v4
+        env:
+          LOG_LEVEL: debug
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: master
+          release-type: node
