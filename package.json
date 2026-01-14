@@ -34,6 +34,8 @@
   },
   "dependencies": {
     "file-saver": "^2.0.5",
-    "jspdf": "^2.5.1"
+    "jquery": "^3.7.1",
+    "jspdf": "^2.5.1",
+    "select2": "^4.1.0-rc.0"
   }
 }

@@ -101,6 +101,24 @@ const options = {
     		to: "popup/icon"
     	}]
     }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/css",
+    		to: "popup/css"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/js/select2",
+    		to: "popup/js/select2"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/js/jquery.min.js",
+    		to: "popup/js/jquery.min.js"
+    	}]
+    }),
     new HtmlWebpackPlugin({
       template: path.join(SRC_DIR, "popup", "index.html"),
       filename: "popup.html",
