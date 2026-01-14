@@ -89,3 +89,5 @@ jobs:
           target-branch: master
           config-file: release-please-config.json
           default-branch: master
+          # Only create PRs, don't create releases automatically
+          # Releases will be created by build.yml when PR is merged

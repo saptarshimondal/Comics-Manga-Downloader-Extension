@@ -1,8 +1,10 @@
 name: Build Extension
 
 on:
-  release:
-    types: [published, created]
+  push:
+    tags:
+      - 'v*'
+      - 'comics-manga-downloader-v*'
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ jobs:
       - name: 📥 Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -27,10 +29,9 @@ jobs:
 
       - name: ℹ️ Debug info
         run: |
-          echo "Release tag: ${{ github.event.release.tag_name }}"
-          echo "Release name: ${{ github.event.release.name }}"
-          echo "Is prerelease: ${{ github.event.release.prerelease }}"
-          echo "Is draft: ${{ github.event.release.draft }}"
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "Tag: $TAG"
+          echo "Ref: ${{ github.ref }}"
 
       - name: 🏗️ Build Firefox extension
         run: npm run pack:firefox
@@ -39,8 +40,9 @@ jobs:
         run: npm run pack:chrome
 
       - name: 📝 Rename files with tag
+        id: prepare-assets
         run: |
-          TAG=${{ github.event.release.tag_name }}
+          TAG="${GITHUB_REF#refs/tags/}"
           echo "Preparing assets for tag: $TAG"
           
           # Extract version from tag (handle both v1.4.1 and comics-manga-downloader-v1.4.1)
@@ -53,6 +55,7 @@ jobs:
           fi
           
           echo "Using version tag: $VERSION_TAG"
+          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
           
           # Create release directory
           mkdir -p release-assets
@@ -81,13 +84,16 @@ jobs:
           echo "Files ready for upload:"
           ls -lh release-assets/
 
-      - name: 📤 Upload release assets and publish release
+      - name: 📤 Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ steps.prepare-assets.outputs.version_tag || github.ref_name }}
           files: |
             release-assets/comics-manga-downloader-*
           draft: false
-          prerelease: ${{ github.event.release.prerelease }}
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
