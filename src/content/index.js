@@ -13,13 +13,55 @@ import FileSaver from 'file-saver'
     const imgs = document.querySelectorAll("img"); 
 
     const images = [];
+    const MAX_DATA_URI_SIZE = 500 * 1024; // 500KB - only convert small images to avoid message size limits
 
     imgs.forEach(function (img, i) {
       img.dataset.download_id = i;
 
+      // Optimization: Get dimensions from already-loaded images
+      // This avoids the popup needing to load images just to get dimensions
+      let width = 0;
+      let height = 0;
+      
+      if (img.complete && (img.naturalWidth || img.width)) {
+        width = img.naturalWidth || img.width;
+        height = img.naturalHeight || img.height;
+      }
+      
+      // Try to get image as data URI if it's already loaded, same-origin, and small
+      // This avoids re-fetching in the popup for small images
+      let imageData = null;
+      if (img.complete && width > 0 && height > 0) {
+        // Only convert small images to data URI to avoid message size limits
+        const estimatedSize = width * height * 3; // Rough estimate: width * height * 3 bytes (RGB)
+        if (estimatedSize < MAX_DATA_URI_SIZE) {
+          try {
+            // Only convert to data URI if it's same-origin or already loaded
+            // This avoids CORS issues and re-fetching
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            imageData = canvas.toDataURL('image/jpeg', 0.85); // Use 0.85 quality for balance
+            
+            // Check actual size - if too large, don't use data URI
+            if (imageData.length > MAX_DATA_URI_SIZE) {
+              imageData = null;
+            }
+          } catch (e) {
+            // Canvas might be tainted (CORS), fall back to URL
+            // This is expected for cross-origin images
+          }
+        }
+      }
+
       images.push({
-        'src': img.src,
-        'type': srcType(img.src)
+        'src': imageData || img.src, // Use data URI if available, otherwise URL
+        'type': imageData ? 'data' : srcType(img.src),
+        'width': width, // Send dimensions so popup doesn't need to load for dimensions
+        'height': height,
+        'originalSrc': img.src // Always keep original URL for download
       })
     })
 
@@ -29,7 +71,9 @@ import FileSaver from 'file-saver'
     for(let canvas of canvases){
       images.push({
         'src': canvas.toDataURL('image/jpeg'),
-        'type': 'data'
+        'type': 'data',
+        'width': canvas.width,
+        'height': canvas.height
       })
     }
 
@@ -307,7 +351,7 @@ import FileSaver from 'file-saver'
       };
 
       for (let i = 0; i < images.length; i++) {
-        const {src, type, checked} = images[i];
+        const {src, type, checked, originalSrc} = images[i];
         
         // Only process checked images
         if (!checked) {
@@ -318,16 +362,21 @@ import FileSaver from 'file-saver'
           let imageData = null;
           let mime = null;
 
-          if (type === 'url') {
+          // Use originalSrc for download if available (better quality), otherwise use src
+          const imageSrc = originalSrc || src;
+
+          if (type === 'url' || (type === 'data' && originalSrc)) {
             // Try canvas method first (for images already in DOM)
+            // Use originalSrc for better quality if available
             try {
-              const image = await imageToBase64(src);
+              const image = await imageToBase64(imageSrc);
               imageData = image.data;
               mime = image.mime;
             } catch (canvasError) {
               // Canvas failed, use background script to fetch (bypasses CORS)
+              // Use originalSrc for better quality if available
               try {
-                const image = await fetchImageViaBackground(src);
+                const image = await fetchImageViaBackground(imageSrc);
                 if (!image || !image.data) {
                   throw new Error('Invalid image data from background script');
                 }

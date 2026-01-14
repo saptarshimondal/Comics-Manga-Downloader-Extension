@@ -190,6 +190,7 @@
             grid-template-rows: 1fr auto;
             justify-items: center;
             align-items: center;
+            min-height: 200px;
     
             box-shadow: var(--elevation-1);
             border-radius: var(--border-radius-sm);
@@ -197,6 +198,12 @@
             background: var(--neutral-lightest);
     
             transition: var(--transition-border-color), var(--transition-box-shadow);
+          }
+          
+          #images_container .card > img {
+            grid-row: 1;
+            align-self: center;
+            justify-self: center;
           }
     
           #images_container .card:hover {
@@ -209,6 +216,12 @@
     
           #images_container img {
             background: var(--image-background); /* Useful for transparent images */
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Preserve aspect ratio, fit within container */
+            display: block; /* Remove inline spacing */
           }
     
           #images_container .checkbox,

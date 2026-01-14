@@ -110,22 +110,69 @@ class ImagesView extends View {
     // Reset dimension tracking for new render
     this._lastKnownDimensions.clear();
     this._pendingDimensions.clear();
+    
+    // First, set dimensions from data if provided (from content script)
+    // This avoids needing to load images just to get dimensions
+    this._setDimensionsFromData(data);
+    
+    // Then update any images that are already loaded (cached)
     this._updateAllLoadedImageDims();
+  }
+  
+  // Set dimensions from data provided by content script (optimization)
+  _setDimensionsFromData(data) {
+    const imageDimensions = getState('imageDimensions') || {};
+    
+    data.forEach((img, i) => {
+      if (img.width && img.height) {
+        const dimString = `${img.width}x${img.height}`;
+        const card = this._parent.querySelector(`#card_${i}`);
+        if (card) {
+          const dimsEl = card.querySelector('.image_dims');
+          if (dimsEl) {
+            dimsEl.textContent = `${img.width} × ${img.height}px`;
+            card.dataset.dimensions = dimString;
+          }
+          
+          // Store in model
+          const imgType = img.type || (img.src.startsWith('data') ? 'data' : 'url');
+          const imageKey = `${img.src}|${imgType}`;
+          imageDimensions[imageKey] = dimString;
+          
+          // Track for dropdown update
+          if (!this._lastKnownDimensions.has(dimString)) {
+            this._pendingDimensions.add(dimString);
+          }
+        }
+      }
+    });
+    
+    setState('imageDimensions', imageDimensions);
+    
+    // Update dropdown if we have new dimensions
+    if (this._pendingDimensions.size > 0) {
+      this._scheduleDropdownUpdate();
+    }
   }
 
   _buildMarkUp() {
     let markup = ``;
 
     this._data.forEach(function (img, i) {
+      // Use provided dimensions if available, otherwise show "Loading..."
+      const dimText = (img.width && img.height) ? `${img.width} × ${img.height}px` : 'Loading…';
+      
       markup += `
         <div data-id="${i}" id="card_${i}" class="card ${img.checked ? 'checked' : ''}" style="min-height: 200px;">
-          <img src="${img.src}" style="min-width: 50px; max-width: 200px;">
+          <img src="${img.src}" 
+               loading="lazy" 
+               style="min-width: 50px; max-width: 200px; max-height: 100%; width: auto; height: auto; object-fit: contain;">
 
           <!-- ✅ Dimensions label -->
           <div class="image_dims_container"
                style="position:absolute; left:6px; bottom:6px; padding:2px 6px; border-radius:6px;
                       font-size:12px; background:rgba(0,0,0,0.6); color:#fff; max-width:90%;">
-            <span class="image_dims">Loading…</span>
+            <span class="image_dims">${dimText}</span>
           </div>
 
           <div class="checkbox"></div>
