@@ -56,30 +56,117 @@ export const selectAllController = function (checkVal) {
 	DownloadView.render(images);
 }
 
-const downloaderController = async function (fileName, downloadType, callback = ()=>{}) {
+const downloaderController = async function (fileName, downloadType, progressCallback = ()=>{}) {
 
 	try {
 		const images = getState('filteredImages').filter(img => img.checked);
+		const totalImages = images.length;
+
+		if (totalImages === 0) {
+			throw new Error('No images selected');
+		}
 
 		const [tab] = await browser.tabs.query({active: true, currentWindow: true});
 
 		// Inject content script using Manifest V3 API
+		progressCallback(10, 'Injecting content script...');
 		await browser.scripting.executeScript({
 			target: { tabId: tab.id },
 			files: ['./content.bundle.js']
 		});
 
-		callback();	
+		progressCallback(20, 'Preparing images...');
 
-		const imagesData =  await browser.tabs.sendMessage(tab.id, {
-			"method": "generatePDF", 
-			"fileName": fileName,
-			"downloadType": downloadType,
-			"images": images
-		});
+		if (downloadType === 'browser') {
+			// Browser download - simpler, just open print dialog
+			progressCallback(50, 'Opening print dialog...');
+			await browser.tabs.sendMessage(tab.id, {
+				"method": "generatePDF", 
+				"fileName": fileName,
+				"downloadType": downloadType,
+				"images": images
+			});
+			progressCallback(100, 'Print dialog opened!');
+		} else if (downloadType === 'jspdf') {
+			// JSPDF download - track progress through image processing
+			progressCallback(10, 'Connecting to background service...');
+			
+			// Set up port connection to track image processing progress
+			const port = browser.runtime.connect({ name: 'conn-get-images-data' });
+			
+			// Send request for image data
+			port.postMessage({ method: 'getImagesData', images: images });
+			
+			// Track progress as images are processed
+			const progressPromise = new Promise((resolve, reject) => {
+				port.onMessage.addListener(function(message) {
+					const {type, data, progress, text, error} = message;
+					
+					if(type === 'progress'){
+						// Map background progress (0-100) to overall progress (30-80%)
+						const overallProgress = 30 + (progress * 0.5); // 30% to 80%
+						progressCallback(Math.round(overallProgress), text || `Processing images...`);
+					} else if(type === 'success'){
+						progressCallback(80, 'Generating PDF...');
+						
+						// Filter out images with invalid mime types and ensure only checked images
+						const validImagesData = data.filter((img, index) => {
+							// Only include checked images
+							if (!images[index] || !images[index].checked) {
+								return false;
+							}
+							// Filter out images with null src or invalid mime types
+							if (!img.src || img.mime === 'UNKNOWN' || !img.mime) {
+								console.warn(`Skipping image ${index}: invalid mime type or src`);
+								return false;
+							}
+							return true;
+						});
+						
+						if (validImagesData.length === 0) {
+							throw new Error('No valid images to download. Some images may have unsupported formats.');
+						}
+						
+						// Send message to content script to generate PDF with processed image data
+						browser.tabs.sendMessage(tab.id, {
+							"method": "generatePDF", 
+							"fileName": fileName,
+							"downloadType": downloadType,
+							"images": images,
+							"imagesData": validImagesData // Pass only valid, checked image data
+						}).then(() => {
+							progressCallback(95, 'Finalizing PDF...');
+							// Give the browser time to start the download
+							setTimeout(() => {
+								progressCallback(100, 'PDF downloaded successfully!');
+								resolve();
+							}, 1000);
+						}).catch((error) => {
+							console.error('Error generating PDF:', error);
+							reject(error);
+						});
+						
+						port.disconnect();
+					} else if (type === 'error') {
+						port.disconnect();
+						const errorMsg = error || data?.error || 'Unknown error';
+						reject(new Error('Failed to process images: ' + errorMsg));
+					}
+				});
+				
+				// Timeout after 120 seconds
+				setTimeout(() => {
+					port.disconnect();
+					reject(new Error('Download timeout - please try again'));
+				}, 120000);
+			});
+			
+			await progressPromise;
+		}
 
 	} catch(e) {
-		console.error(e);
+		console.error('Download error:', e);
+		throw e; // Re-throw to be handled by DownloadView
 	}
 
 };
