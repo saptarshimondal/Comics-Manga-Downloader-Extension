@@ -41,12 +41,19 @@ const imagesSelectionController = function (id, checkVal) {
 export const selectAllController = function (checkVal) {
 
 	let images = getState('filteredImages');
-	images = images.map(({src, type, checked}) => {
-		return {
+	// Preserve all fields including optimization data
+	images = images.map((img) => {
+		const {src, type, originalSrc, width, height} = img;
+		const result = {
 			'src': src, 
 			'type': type, 
 			'checked': checkVal
-		}
+		};
+		// Preserve optimization data if available
+		if (originalSrc) result.originalSrc = originalSrc;
+		if (width) result.width = width;
+		if (height) result.height = height;
+		return result;
 	})
 
 	setState('filteredImages', images);
@@ -158,10 +165,17 @@ const applyFilters = function () {
 	});
 
 	// Map to filteredImages format with checked state (preserve existing checked state)
-	filteredImages = filteredImages.map(({src, type}) => {
+	// Also preserve originalSrc, width, height if they exist (optimization data from content script)
+	filteredImages = filteredImages.map((img) => {
+		const {src, type, originalSrc, width, height} = img;
 		const key = `${src}|${type}`;
 		const wasChecked = checkedStateMap.has(key) ? checkedStateMap.get(key) : true;
-		return {'src': src, 'type': type, 'checked': wasChecked}
+		const result = {'src': src, 'type': type, 'checked': wasChecked};
+		// Preserve optimization data if available
+		if (originalSrc) result.originalSrc = originalSrc;
+		if (width) result.width = width;
+		if (height) result.height = height;
+		return result;
 	});
 
 	setState('filteredImages', filteredImages);

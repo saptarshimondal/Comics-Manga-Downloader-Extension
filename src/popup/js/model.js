@@ -24,12 +24,19 @@ export const initState = ({images, title}) => {
 
 	setState('title', title);
 	setState('images', images);
-	setState('filteredImages', images.map(({src, type}) => {
-		return {
+	// Preserve all fields including optimization data (originalSrc, width, height)
+	setState('filteredImages', images.map((img) => {
+		const {src, type, originalSrc, width, height} = img;
+		const result = {
 			'src': src, 
 			'type': type,
 			'checked': true
-		}
+		};
+		// Preserve optimization data if available
+		if (originalSrc) result.originalSrc = originalSrc;
+		if (width) result.width = width;
+		if (height) result.height = height;
+		return result;
 	}));
 	setState('imageDimensions', {});
 	setState('selectedDimensionFilters', []);
