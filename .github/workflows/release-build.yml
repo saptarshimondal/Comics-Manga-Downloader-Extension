@@ -9,69 +9,63 @@ on:
 permissions:
   contents: write
   pull-requests: read
+  issues: write
 
 jobs:
   release_and_build:
-    # Only run if PR was merged AND it is a Release Please PR branch
+    # Run only if PR was merged and it's a release-please PR
     if: |
       github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release-please--branches--')
+      contains(github.event.pull_request.head.ref, 'release-please')
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # This creates the GitHub Release + tag *now*, only after the release PR is merged
-      - name: 🏷️ Release Please (create GitHub release)
+      - name: 🏷️ Release Please (GitHub Release only)
         id: rp
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
           release-type: node
-          command: github-release
+          skip-github-pull-request: true
 
-      # Sometimes a merged Release PR might not create a release (rare),
-      # so guard the build.
-      - name: 🧾 Show outputs
+      - name: 🧾 Debug outputs
         run: |
+          echo "Outputs JSON:"
+          echo '${{ toJson(steps.rp.outputs) }}'
           echo "release_created=${{ steps.rp.outputs.release_created }}"
           echo "tag_name=${{ steps.rp.outputs.tag_name }}"
 
+      # Only build if a release was actually created
       - name: 📥 Checkout tag
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.rp.outputs.tag_name }}
 
       - name: 🔧 Setup Node.js
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: 📦 Install dependencies
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm ci
 
       - name: 🏗️ Build Firefox extension
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm run pack:firefox
 
       - name: 🏗️ Build Chrome extension
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm run pack:chrome
 
       - name: 📝 Prepare assets
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: |
           TAG="${{ steps.rp.outputs.tag_name }}"
-          echo "Preparing assets for tag: $TAG"
-
           mkdir -p release-assets
 
           FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
@@ -92,7 +86,7 @@ jobs:
           ls -lh release-assets/
 
       - name: 📄 Extract latest changelog entry
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         id: changelog
         run: |
           changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
@@ -101,7 +95,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: 📤 Upload release assets
-        if: steps.rp.outputs.release_created == 'true'
+        if: ${{ steps.rp.outputs.release_created == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.rp.outputs.tag_name }}
