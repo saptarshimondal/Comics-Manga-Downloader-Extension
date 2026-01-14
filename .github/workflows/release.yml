@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
 
 jobs:
   release:
@@ -19,101 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Validate package.json
-        run: |
-          if [ ! -f package.json ]; then
-            echo "Error: package.json not found"
-            exit 1
-          fi
-          node -e "const pkg = require('./package.json'); if (!pkg.version) { console.error('Error: package.json missing version'); process.exit(1); }"
-
-      - name: Verify and prepare release-please files
-        run: |
-          echo "=== Checking required files ==="
-          if [ ! -f package.json ]; then
-            echo "ERROR: package.json not found"
-            exit 1
-          fi
-          
-          PKG_VERSION=$(node -e "console.log(require('./package.json').version)")
-          echo "Current package.json version: $PKG_VERSION"
-          
-          # Check existing tags (with v prefix)
-          echo "=== Checking existing tags ==="
-          git tag -l "v*" | head -5 || echo "No v-prefixed tags found"
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$LATEST_TAG" ]; then
-            echo "Latest tag: $LATEST_TAG"
-            # Extract version from tag (remove 'v' prefix if present)
-            LATEST_VERSION=${LATEST_TAG#v}
-            echo "Latest version from tag: $LATEST_VERSION"
-          else
-            echo "No tags found"
-            LATEST_VERSION=""
-          fi
-          
-          # Ensure manifest exists and matches latest tag or package.json
-          if [ ! -f .release-please-manifest.json ]; then
-            # Use latest tag version if available, otherwise use package.json version
-            MANIFEST_VERSION=${LATEST_VERSION:-$PKG_VERSION}
-            echo "{\".\": \"$MANIFEST_VERSION\"}" > .release-please-manifest.json
-            echo "Created .release-please-manifest.json with version $MANIFEST_VERSION"
-          else
-            # Validate manifest is valid JSON
-            if ! node -e "JSON.parse(require('fs').readFileSync('.release-please-manifest.json', 'utf8'))" 2>/dev/null; then
-              echo "Manifest is invalid, recreating..."
-              MANIFEST_VERSION=${LATEST_VERSION:-$PKG_VERSION}
-              echo "{\".\": \"$MANIFEST_VERSION\"}" > .release-please-manifest.json
-            else
-              CURRENT_MANIFEST_VERSION=$(node -e "console.log(require('./.release-please-manifest.json')['.'])")
-              echo "Current manifest version: $CURRENT_MANIFEST_VERSION"
-              
-              # Update manifest to match latest tag if it exists and is newer
-              if [ -n "$LATEST_VERSION" ]; then
-                if [ "$LATEST_VERSION" != "$CURRENT_MANIFEST_VERSION" ]; then
-                  echo "Updating manifest from $CURRENT_MANIFEST_VERSION to $LATEST_VERSION (from latest tag)"
-                  echo "{\".\": \"$LATEST_VERSION\"}" > .release-please-manifest.json
-                fi
-              fi
-            fi
-          fi
-          
-          # Ensure CHANGELOG.md exists
-          if [ ! -f CHANGELOG.md ]; then
-            REPO_URL="${{ github.repository }}"
-            {
-              echo "# Changelog"
-              echo ""
-              echo "## [$PKG_VERSION]"
-              echo ""
-              echo "### Features"
-              echo "- Initial release"
-              echo ""
-              echo "[$PKG_VERSION]: https://github.com/${REPO_URL}/releases/tag/v${PKG_VERSION}"
-            } > CHANGELOG.md
-            echo "Created CHANGELOG.md"
-          fi
-          
-          echo "=== Final file contents ==="
-          echo "Manifest:"
-          cat .release-please-manifest.json
-
       - name: Release Please
         uses: googleapis/release-please-action@v4
-        id: release
-        continue-on-error: false
         env:
           LOG_LEVEL: debug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
           target-branch: master
-          default-branch: master
-          repo-url: ${{ github.repository }}
-          manifest-file: .release-please-manifest.json
-          changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"perf","section":"Performance Improvements","hidden":false},{"type":"refactor","section":"Code Refactoring","hidden":false},{"type":"docs","section":"Documentation","hidden":false},{"type":"chore","section":"Miscellaneous Chores","hidden":false}]'
+          release-type: node
