@@ -1,0 +1,113 @@
+name: Release and Build
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🚀 Release Please
+        id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: master
+          release-type: node
+
+  build_and_upload:
+    name: Build + Upload Release Assets
+    needs: release
+    runs-on: ubuntu-latest
+
+    # This job runs ONLY when a GitHub Release was created by release-please
+    if: needs.release.outputs.release_created == 'true'
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag_name }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Firefox extension
+        run: npm run pack:firefox
+
+      - name: 🏗️ Build Chrome extension
+        run: npm run pack:chrome
+
+      - name: 📝 Prepare assets
+        run: |
+          TAG="${{ needs.release.outputs.tag_name }}"
+          echo "Building assets for tag: $TAG"
+
+          mkdir -p release-assets
+
+          # Firefox zip (web-ext names can vary, so we find the first .zip)
+          FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
+          if [ -z "$FIREFOX_ZIP" ] || [ ! -f "$FIREFOX_ZIP" ]; then
+            echo "❌ Firefox extension zip not found"
+            ls -la web-ext-artifacts/firefox || true
+            exit 1
+          fi
+          cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
+          echo "✓ Firefox asset ready"
+
+          # Chrome zip (your script should generate this exact path)
+          if [ ! -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
+            echo "❌ Chrome extension zip not found"
+            ls -la web-ext-artifacts/chrome || true
+            exit 1
+          fi
+          cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${TAG}-chrome.zip"
+          echo "✓ Chrome asset ready"
+
+          echo "Assets:"
+          ls -lh release-assets/
+
+      - name: 📄 Extract latest changelog entry
+        id: changelog
+        run: |
+          # Extract text under the first "## " heading (latest release section)
+          changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
+
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: 📤 Upload release assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release.outputs.tag_name }}
+          files: |
+            release-assets/*.zip
+          body: ${{ steps.changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
