@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.5](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.4...v1.4.5) (2026-01-14)
+
+
+### Bug Fixes
+
+* update CI/CD workflows to trigger on release events and streamli… ([18d0bf7](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/18d0bf7724b3fbd05ee48a9ae6525457911dd838))
+* update CI/CD workflows to trigger on release events and streamline asset handling ([ed258a4](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/ed258a411801a6d0c1cb4a65aa108ce4ec2ff8ac))
+
 ## [1.4.4](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/comics-manga-downloader-v1.4.3...comics-manga-downloader-v1.4.4) (2026-01-14)
 
 
