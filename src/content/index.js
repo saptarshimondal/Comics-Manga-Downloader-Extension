@@ -534,12 +534,35 @@ import FileSaver from 'file-saver'
         generatePDFFromData(processedImages, pdfProgressCallback);
         console.log('PDF generation completed successfully');
         
-        progressCallback(100, 'Download complete!');
+        // Send 95% - PDF generated, waiting for download to start
+        progressCallback(95, 'PDF generated, starting download...');
         
-        // Resolve after a short delay to ensure download starts
+        // Wait to ensure the download actually starts
+        // The browser needs time to process the download request
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Send 97% - Download should be starting
+        progressCallback(97, 'Download starting...');
+        
+        // Wait longer to ensure download file is being saved
+        // Larger files need more time
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Send 99% - Download should be in progress
+        progressCallback(99, 'Saving file...');
+        
+        // Wait a bit more to ensure download completes
+        // Give the browser time to actually save the file to disk
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Now send 100% - Download should be complete
+        progressCallback(100, 'Download complete!');
+        console.log('Download completed - file should be saved');
+        
+        // Resolve after ensuring the message is sent
         setTimeout(() => {
           resolve();
-        }, 500);
+        }, 300);
       } catch (error) {
         console.error('Error in downloadUsingJSPdf:', error);
         console.error('Error stack:', error.stack);

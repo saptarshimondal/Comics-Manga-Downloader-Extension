@@ -55,20 +55,22 @@ class DownloadView extends View {
 				
 				// If we reached 100%, mark as complete and schedule popup close
 				if (message.progress >= 100) {
-					console.log('DownloadView: Download complete, closing popup soon');
+					console.log('DownloadView: Download complete, waiting for file to save before closing popup');
 					this._downloadComplete = true
 					// Clear any safety timeout since we got completion
 					if (this._safetyTimeout) {
 						clearTimeout(this._safetyTimeout)
 						this._safetyTimeout = null
 					}
-					// Close popup after a short delay to show completion message
+					// Wait longer before closing to ensure the download file is actually saved
+					// The content script already waited, but we wait a bit more to be safe
+					// This ensures the file is fully saved to disk before closing
 					this._closeTimeout = setTimeout(() => {
 						if (this._downloadComplete) {
-							console.log('DownloadView: Closing popup now');
+							console.log('DownloadView: Closing popup now - download should be complete');
 							window.close()
 						}
-					}, 1000)
+					}, 2500) // Wait 2.5 seconds after 100% to ensure download file is saved
 				}
 				
 				if (message.error) {
