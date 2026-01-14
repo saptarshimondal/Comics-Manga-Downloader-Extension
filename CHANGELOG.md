@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.7](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.6...v1.4.7) (2026-01-14)
+
+
+### Bug Fixes
+
+* add release and build workflows for GitHub Actions ([719d3b7](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/719d3b7a896b0af9dec5ed6344d9dbd190f939d9))
+* add release and build workflows for GitHub Actions ([65f8a06](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/65f8a069014ec1e56aa75e1f2b3d8ddcdfa7f418))
+
 ## [1.4.6](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.5...v1.4.6) (2026-01-14)
 
 
