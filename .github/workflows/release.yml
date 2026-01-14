@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   release:
@@ -44,8 +45,12 @@ jobs:
       - name: Release Please
         uses: googleapis/release-please-action@v4
         env:
-          LOG_LEVEL: debug
+          LOG_LEVEL: info
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           target-branch: master
+          default-branch: master
+          repo-url: ${{ github.repository }}
+          commit-search-depth: 10
+          release-search-depth: 10
