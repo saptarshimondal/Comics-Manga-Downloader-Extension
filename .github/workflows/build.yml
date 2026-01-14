@@ -3,15 +3,6 @@ name: Build Extension
 on:
   release:
     types: [published, created]
-  push:
-    tags:
-      - 'v*'
-      - 'comics-manga-downloader-v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to build (e.g., v1.4.0)'
-        required: false
 
 permissions:
   contents: write
@@ -19,65 +10,12 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # Only run on release events, tag pushes, or manual dispatch
-    # Do NOT run on regular PR merges to master
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'release' ||
-      startsWith(github.ref, 'refs/tags/v') ||
-      startsWith(github.ref, 'refs/tags/comics-manga-downloader-v')
 
     steps:
       - name: 📥 Checkout repo
-        id: checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref }}
-      
-      - name: 🔍 Find release tag
-        id: find-tag
-        run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-            echo "Using manually specified tag: $TAG"
-          elif [ -n "${{ github.event.release.tag_name }}" ]; then
-            TAG="${{ github.event.release.tag_name }}"
-            echo "Using tag from release event: $TAG"
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            echo "Using tag from ref: $TAG"
-          else
-            echo "❌ Error: Could not determine tag"
-            exit 1
-          fi
-          
-          # Extract version from tag (handle both v1.4.1 and comics-manga-downloader-v1.4.1)
-          if [[ "$TAG" == comics-manga-downloader-v* ]]; then
-            VERSION_TAG="v${TAG#comics-manga-downloader-v}"
-            echo "Extracted version tag: $VERSION_TAG from $TAG"
-          elif [[ "$TAG" == v* ]]; then
-            VERSION_TAG="$TAG"
-          else
-            VERSION_TAG="$TAG"
-          fi
-          
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
-          echo "Using full tag: ${TAG}"
-          echo "Using version tag for files: ${VERSION_TAG}"
-          
-          # Verify tag exists
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "✓ Tag $TAG exists"
-            git checkout "$TAG"
-          else
-            echo "❌ Error: Tag $TAG does not exist in repository"
-            echo "Available tags:"
-            git tag --sort=-creatordate | head -10 || echo "No tags found"
-            exit 1
-          fi
+          ref: ${{ github.event.release.tag_name }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -89,38 +27,10 @@ jobs:
 
       - name: ℹ️ Debug info
         run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-            echo "Triggered by: manual dispatch"
-          elif [ -n "${{ github.event.release.tag_name }}" ]; then
-            TAG="${{ github.event.release.tag_name }}"
-            echo "Triggered by: release event"
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            echo "Triggered by: tag push"
-          else
-            # Get latest tag from git (should be the one just created by release-please)
-            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-            if [ -z "$TAG" ]; then
-              # Try to get version from package.json
-              TAG="v$(node -e "console.log(require('./package.json').version)")"
-            fi
-            echo "Triggered by: push to master (release commit)"
-          fi
-          echo "Release tag: $TAG"
+          echo "Release tag: ${{ github.event.release.tag_name }}"
           echo "Release name: ${{ github.event.release.name }}"
-          echo "Release ID: ${{ github.event.release.id }}"
-          echo "Repository: ${{ github.repository }}"
-          if [ -n "${{ github.event.head_commit.id }}" ]; then
-            echo "Commit: ${{ github.event.head_commit.id }}"
-            echo "Author: ${{ github.event.head_commit.author.name }}"
-            echo "Message: ${{ github.event.head_commit.message }}"
-          fi
-          # List recent tags to verify
-          echo "Recent tags:"
-          git tag --sort=-creatordate | head -5 || echo "No tags found"
+          echo "Is prerelease: ${{ github.event.release.prerelease }}"
+          echo "Is draft: ${{ github.event.release.draft }}"
 
       - name: 🏗️ Build Firefox extension
         run: npm run pack:firefox
@@ -128,12 +38,21 @@ jobs:
       - name: 🏗️ Build Chrome extension
         run: npm run pack:chrome
 
-      - name: 📝 Prepare release assets
-        id: prepare-assets
+      - name: 📝 Rename files with tag
         run: |
-          FULL_TAG="${{ steps.find-tag.outputs.tag }}"
-          VERSION_TAG="${{ steps.find-tag.outputs.version_tag }}"
-          echo "Preparing assets for tag: $FULL_TAG (version: $VERSION_TAG)"
+          TAG=${{ github.event.release.tag_name }}
+          echo "Preparing assets for tag: $TAG"
+          
+          # Extract version from tag (handle both v1.4.1 and comics-manga-downloader-v1.4.1)
+          if [[ "$TAG" == comics-manga-downloader-v* ]]; then
+            VERSION_TAG="v${TAG#comics-manga-downloader-v}"
+          elif [[ "$TAG" == v* ]]; then
+            VERSION_TAG="$TAG"
+          else
+            VERSION_TAG="$TAG"
+          fi
+          
+          echo "Using version tag: $VERSION_TAG"
           
           # Create release directory
           mkdir -p release-assets
@@ -142,52 +61,33 @@ jobs:
           FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
           if [ -n "$FIREFOX_ZIP" ] && [ -f "$FIREFOX_ZIP" ]; then
             cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${VERSION_TAG}-firefox.zip"
-            echo "✓ Firefox extension prepared: release-assets/comics-manga-downloader-${VERSION_TAG}-firefox.zip"
-            echo "  Source: $FIREFOX_ZIP"
+            echo "✓ Firefox extension: release-assets/comics-manga-downloader-${VERSION_TAG}-firefox.zip"
           else
-            echo "⚠ Warning: Firefox extension zip not found in web-ext-artifacts/firefox/"
+            echo "❌ Error: Firefox extension zip not found"
             ls -la web-ext-artifacts/firefox/ || echo "Directory does not exist"
+            exit 1
           fi
           
           # Find and rename Chrome extension
           if [ -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
             cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${VERSION_TAG}-chrome.zip"
-            echo "✓ Chrome extension prepared: release-assets/comics-manga-downloader-${VERSION_TAG}-chrome.zip"
+            echo "✓ Chrome extension: release-assets/comics-manga-downloader-${VERSION_TAG}-chrome.zip"
           else
-            echo "⚠ Warning: Chrome extension zip not found"
+            echo "❌ Error: Chrome extension zip not found"
             ls -la web-ext-artifacts/chrome/ || echo "Directory does not exist"
-          fi
-          
-          # List all files to be uploaded
-          echo ""
-          echo "=== Files to upload ==="
-          ls -lh release-assets/ || echo "No files found in release-assets/"
-          
-          # Verify files exist before upload
-          if [ ! -f "release-assets/comics-manga-downloader-${VERSION_TAG}-firefox.zip" ] || [ ! -f "release-assets/comics-manga-downloader-${VERSION_TAG}-chrome.zip" ]; then
-            echo "❌ Error: One or more required files are missing!"
             exit 1
           fi
           
-          # Output tags for next step
-          echo "tag=${FULL_TAG}" >> $GITHUB_OUTPUT
-          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
-          echo "Full tag: ${FULL_TAG}, Version tag: ${VERSION_TAG}"
+          echo "Files ready for upload:"
+          ls -lh release-assets/
 
       - name: 📤 Upload release assets and publish release
         uses: softprops/action-gh-release@v2
         with:
-          # Use the full tag name (comics-manga-downloader-v1.4.1) for the release tag
-          tag_name: ${{ steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}
-          # Set release name to vX.Y.Z format
-          name: ${{ steps.prepare-assets.outputs.version_tag || steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}
-          # Use version tag (v1.4.1) for file names
+          tag_name: ${{ github.event.release.tag_name }}
           files: |
-            release-assets/comics-manga-downloader-${{ steps.prepare-assets.outputs.version_tag || steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}-firefox.zip
-            release-assets/comics-manga-downloader-${{ steps.prepare-assets.outputs.version_tag || steps.prepare-assets.outputs.tag || github.event.release.tag_name || github.ref_name }}-chrome.zip
+            release-assets/comics-manga-downloader-*
           draft: false
-          prerelease: false
-          make_latest: true
+          prerelease: ${{ github.event.release.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: false
