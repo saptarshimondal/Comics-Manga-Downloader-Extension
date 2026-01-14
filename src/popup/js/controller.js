@@ -88,80 +88,30 @@ const downloaderController = async function (fileName, downloadType, progressCal
 			});
 			progressCallback(100, 'Print dialog opened!');
 		} else if (downloadType === 'jspdf') {
-			// JSPDF download - track progress through image processing
-			progressCallback(10, 'Connecting to background service...');
+			// JSPDF download - process images directly in content script to avoid 64MB limit
+			progressCallback(5, 'Preparing to process images...');
 			
-			// Set up port connection to track image processing progress
-			const port = browser.runtime.connect({ name: 'conn-get-images-data' });
-			
-			// Send request for image data
-			port.postMessage({ method: 'getImagesData', images: images });
-			
-			// Track progress as images are processed
-			const progressPromise = new Promise((resolve, reject) => {
-				port.onMessage.addListener(function(message) {
-					const {type, data, progress, text, error} = message;
-					
-					if(type === 'progress'){
-						// Map background progress (0-100) to overall progress (30-80%)
-						const overallProgress = 30 + (progress * 0.5); // 30% to 80%
-						progressCallback(Math.round(overallProgress), text || `Processing images...`);
-					} else if(type === 'success'){
-						progressCallback(80, 'Generating PDF...');
-						
-						// Filter out images with invalid mime types and ensure only checked images
-						const validImagesData = data.filter((img, index) => {
-							// Only include checked images
-							if (!images[index] || !images[index].checked) {
-								return false;
-							}
-							// Filter out images with null src or invalid mime types
-							if (!img.src || img.mime === 'UNKNOWN' || !img.mime) {
-								console.warn(`Skipping image ${index}: invalid mime type or src`);
-								return false;
-							}
-							return true;
-						});
-						
-						if (validImagesData.length === 0) {
-							throw new Error('No valid images to download. Some images may have unsupported formats.');
-						}
-						
-						// Send message to content script to generate PDF with processed image data
-						browser.tabs.sendMessage(tab.id, {
-							"method": "generatePDF", 
-							"fileName": fileName,
-							"downloadType": downloadType,
-							"images": images,
-							"imagesData": validImagesData // Pass only valid, checked image data
-						}).then(() => {
-							progressCallback(95, 'Finalizing PDF...');
-							// Give the browser time to start the download
-							setTimeout(() => {
-								progressCallback(100, 'PDF downloaded successfully!');
-								resolve();
-							}, 1000);
-						}).catch((error) => {
-							console.error('Error generating PDF:', error);
-							reject(error);
-						});
-						
-						port.disconnect();
-					} else if (type === 'error') {
-						port.disconnect();
-						const errorMsg = error || data?.error || 'Unknown error';
-						reject(new Error('Failed to process images: ' + errorMsg));
-					}
+			// Send message to content script to generate PDF
+			// Content script will process images directly to avoid 64MB message limit
+			// Progress updates will be sent via messages and handled by DownloadView
+			browser.tabs.sendMessage(tab.id, {
+				"method": "generatePDF", 
+				"fileName": fileName,
+				"downloadType": downloadType,
+				"images": images // Pass original images, content script will process them
+			}).then((response) => {
+				console.log('PDF generation response:', response);
+				// Progress will be updated via messages from content script
+				// Don't set to 100% here - let content script send final progress
+			}).catch((error) => {
+				console.error('Error generating PDF:', error);
+				console.error('Error details:', {
+					message: error.message,
+					stack: error.stack,
+					tabId: tab.id
 				});
-				
-				// Timeout after 120 seconds
-				setTimeout(() => {
-					port.disconnect();
-					reject(new Error('Download timeout - please try again'));
-				}, 120000);
+				throw new Error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
 			});
-			
-			await progressPromise;
 		}
 
 	} catch(e) {

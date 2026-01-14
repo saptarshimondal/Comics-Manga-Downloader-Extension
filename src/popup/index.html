@@ -9,14 +9,25 @@
         html,
           body {
             overflow-y: scroll;
+            overflow-x: hidden;
             height: 100%;
             margin: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+          
+          * {
+            box-sizing: border-box;
           }
     
           main {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           .grid {
@@ -47,6 +58,9 @@
             position: sticky;
             padding: 12px;
             background: var(--neutral-lightest);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           #filters_container {
@@ -157,6 +171,9 @@
             padding: var(--images-container-padding);
             padding-top: 9px; /* Account for checkbox 3px margin */
             background: var(--neutral-lighter);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
     
           #select_all_checkbox_container .select_all_checkbox {
@@ -427,11 +444,11 @@
 
         </div>
 
-        <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: calc(2 * var(--images-container-padding) + 2 * 200px + 1 * var(--images-container-gap));">
+        <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: 100%; max-width: 100%;">
           Loading...
 
         </div>
-        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px;">
+        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px; width: 100%; max-width: 100%; box-sizing: border-box;">
           <input type="text" id="fileName" placeholder="File name" title="Set the name of the file you want to download as pdf." value="">
           <select id="downloadType" title="Select a driver to download the pdf">
             <option value="jspdf">Direct Download</option>
