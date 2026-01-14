@@ -2,7 +2,7 @@ name: Build Extension
 
 on:
   release:
-    types: [published]
+    types: [published, created]
 
 permissions:
   contents: write
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: 📥 Checkout repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -23,30 +25,67 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      - name: ℹ️ Debug info
+        run: |
+          echo "Release tag: ${{ github.event.release.tag_name }}"
+          echo "Release name: ${{ github.event.release.name }}"
+          echo "Release ID: ${{ github.event.release.id }}"
+          echo "Repository: ${{ github.repository }}"
+
       - name: 🏗️ Build Firefox extension
         run: npm run pack:firefox
 
       - name: 🏗️ Build Chrome extension
         run: npm run pack:chrome
 
-      - name: 📝 Rename files with tag
+      - name: 📝 Prepare release assets
         run: |
           TAG=${{ github.event.release.tag_name }}
-          # Rename Firefox extension
-          FIREFOX_ZIP=$(ls web-ext-artifacts/firefox/*.zip 2>/dev/null | head -n 1)
-          if [ -n "$FIREFOX_ZIP" ]; then
-            mv "$FIREFOX_ZIP" web-ext-artifacts/firefox/comics-manga-downloader-${TAG}-firefox.zip
+          echo "Preparing assets for tag: $TAG"
+          
+          # Create release directory
+          mkdir -p release-assets
+          
+          # Find and rename Firefox extension (handles any naming pattern)
+          FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
+          if [ -n "$FIREFOX_ZIP" ] && [ -f "$FIREFOX_ZIP" ]; then
+            cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
+            echo "✓ Firefox extension prepared: release-assets/comics-manga-downloader-${TAG}-firefox.zip"
+            echo "  Source: $FIREFOX_ZIP"
+          else
+            echo "⚠ Warning: Firefox extension zip not found in web-ext-artifacts/firefox/"
+            ls -la web-ext-artifacts/firefox/ || echo "Directory does not exist"
           fi
-          # Rename Chrome extension
+          
+          # Find and rename Chrome extension
           if [ -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
-            mv web-ext-artifacts/chrome/chrome-extension.zip web-ext-artifacts/chrome/comics-manga-downloader-${TAG}-chrome.zip
+            cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${TAG}-chrome.zip"
+            echo "✓ Chrome extension prepared: release-assets/comics-manga-downloader-${TAG}-chrome.zip"
+          else
+            echo "⚠ Warning: Chrome extension zip not found"
+            ls -la web-ext-artifacts/chrome/ || echo "Directory does not exist"
+          fi
+          
+          # List all files to be uploaded
+          echo ""
+          echo "=== Files to upload ==="
+          ls -lh release-assets/ || echo "No files found in release-assets/"
+          
+          # Verify files exist before upload
+          if [ ! -f "release-assets/comics-manga-downloader-${TAG}-firefox.zip" ] || [ ! -f "release-assets/comics-manga-downloader-${TAG}-chrome.zip" ]; then
+            echo "❌ Error: One or more required files are missing!"
+            exit 1
           fi
 
       - name: 📤 Upload release assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           files: |
-            web-ext-artifacts/firefox/comics-manga-downloader-${{ github.event.release.tag_name }}-firefox.zip
-            web-ext-artifacts/chrome/comics-manga-downloader-${{ github.event.release.tag_name }}-chrome.zip
+            release-assets/comics-manga-downloader-${{ github.event.release.tag_name }}-firefox.zip
+            release-assets/comics-manga-downloader-${{ github.event.release.tag_name }}-chrome.zip
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
