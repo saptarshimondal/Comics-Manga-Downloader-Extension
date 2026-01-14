@@ -101,17 +101,25 @@ A simple cross browser extension to download comics / manga as pdf file from any
 
 <!-- HOW TO USE -->
 ## How to use
-* Visit any website.
-* Let all the images load completely.
-* Click on the extension icon to open the extension popup.
-* Select the images you want to include in your output pdf.
-* Set a file name and select a download method and click on "Download" button.
-* If you select "Direct Download", then pdf will be automatically downloaded.
-* If you select "Built In Browser", then it will open the default browser print popup.
-* Select "Destination" - "Save as pdf".
-* Click on "More setting".
-* Set "Margins" - "None".
-* Finally click on "Save" button to save the pdf file.
+- Visit any website.
+- Wait for all images to finish loading.
+- Click the extension icon to open the extension popup.
+- Select the images you want to include in the output PDF.
+- You can filter images by image dimensions or by image URL.
+- Enter a file name, choose a download method, and click **Download**.
+
+### Download methods
+
+**Direct Download**
+- The PDF will be downloaded automatically.
+
+**Built-in Browser**
+- The browser’s print dialog will open.
+- Set **Destination** to **Save as PDF**.
+- Click **More settings**.
+- Set **Margins** to **None**.
+- Click **Save** to download the PDF.
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
