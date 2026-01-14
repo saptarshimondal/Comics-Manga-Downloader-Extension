@@ -12,6 +12,15 @@ jobs:
       contents: write
       pull-requests: write
 
+    # Skip if this is a release commit (from release-please merging a release PR)
+    # Check commit message and author to avoid infinite loop
+    if: |
+      github.event.head_commit.author.name != 'release-please[bot]' &&
+      !contains(github.event.head_commit.message, 'chore: release') &&
+      !contains(github.event.head_commit.message, 'Release') &&
+      !startsWith(github.event.head_commit.message, 'chore(master): release') &&
+      !contains(github.event.head_commit.message, 'chore: release-please')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
