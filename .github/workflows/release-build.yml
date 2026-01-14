@@ -8,12 +8,11 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
   issues: write
 
 jobs:
   release_and_build:
-    # Run only if PR was merged and it's a release-please PR
     if: |
       github.event.pull_request.merged == true &&
       contains(github.event.pull_request.head.ref, 'release-please')
@@ -37,7 +36,6 @@ jobs:
           echo "release_created=${{ steps.rp.outputs.release_created }}"
           echo "tag_name=${{ steps.rp.outputs.tag_name }}"
 
-      # Only build if a release was actually created
       - name: 📥 Checkout tag
         if: ${{ steps.rp.outputs.release_created == 'true' }}
         uses: actions/checkout@v4
