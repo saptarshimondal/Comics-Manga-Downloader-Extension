@@ -1,22 +1,23 @@
-name: Release and Build
+name: Release + Build Assets
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - master
 
 permissions:
   contents: write
-  pull-requests: write
-  issues: write
+  pull-requests: read
 
 jobs:
-  release:
-    name: Release Please
+  release_and_build:
+    # Only run if PR was merged AND it is a Release Please PR branch
+    if: |
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release-please--branches--')
+
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.rp.outputs.release_created }}
-      tag_name: ${{ steps.rp.outputs.tag_name }}
 
     steps:
       - name: 📥 Checkout repo
@@ -24,53 +25,55 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🚀 Release Please
+      # This creates the GitHub Release + tag *now*, only after the release PR is merged
+      - name: 🏷️ Release Please (create GitHub release)
         id: rp
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
           release-type: node
+          command: github-release
 
-  build_and_upload:
-    name: Build + Upload Release Assets
-    needs: release
-    runs-on: ubuntu-latest
+      # Sometimes a merged Release PR might not create a release (rare),
+      # so guard the build.
+      - name: 🧾 Show outputs
+        run: |
+          echo "release_created=${{ steps.rp.outputs.release_created }}"
+          echo "tag_name=${{ steps.rp.outputs.tag_name }}"
 
-    # This job runs ONLY when a GitHub Release was created by release-please
-    if: needs.release.outputs.release_created == 'true'
-
-    permissions:
-      contents: write
-
-    steps:
       - name: 📥 Checkout tag
+        if: steps.rp.outputs.release_created == 'true'
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.tag_name }}
+          ref: ${{ steps.rp.outputs.tag_name }}
 
       - name: 🔧 Setup Node.js
+        if: steps.rp.outputs.release_created == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: 📦 Install dependencies
+        if: steps.rp.outputs.release_created == 'true'
         run: npm ci
 
       - name: 🏗️ Build Firefox extension
+        if: steps.rp.outputs.release_created == 'true'
         run: npm run pack:firefox
 
       - name: 🏗️ Build Chrome extension
+        if: steps.rp.outputs.release_created == 'true'
         run: npm run pack:chrome
 
       - name: 📝 Prepare assets
+        if: steps.rp.outputs.release_created == 'true'
         run: |
-          TAG="${{ needs.release.outputs.tag_name }}"
-          echo "Building assets for tag: $TAG"
+          TAG="${{ steps.rp.outputs.tag_name }}"
+          echo "Preparing assets for tag: $TAG"
 
           mkdir -p release-assets
 
-          # Firefox zip (web-ext names can vary, so we find the first .zip)
           FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
           if [ -z "$FIREFOX_ZIP" ] || [ ! -f "$FIREFOX_ZIP" ]; then
             echo "❌ Firefox extension zip not found"
@@ -78,36 +81,31 @@ jobs:
             exit 1
           fi
           cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
-          echo "✓ Firefox asset ready"
 
-          # Chrome zip (your script should generate this exact path)
           if [ ! -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
             echo "❌ Chrome extension zip not found"
             ls -la web-ext-artifacts/chrome || true
             exit 1
           fi
           cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${TAG}-chrome.zip"
-          echo "✓ Chrome asset ready"
 
-          echo "Assets:"
           ls -lh release-assets/
 
       - name: 📄 Extract latest changelog entry
+        if: steps.rp.outputs.release_created == 'true'
         id: changelog
         run: |
-          # Extract text under the first "## " heading (latest release section)
           changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
-
           echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
           echo "$changelog" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: 📤 Upload release assets to GitHub Release
+      - name: 📤 Upload release assets
+        if: steps.rp.outputs.release_created == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.release.outputs.tag_name }}
-          files: |
-            release-assets/*.zip
+          tag_name: ${{ steps.rp.outputs.tag_name }}
+          files: release-assets/*.zip
           body: ${{ steps.changelog.outputs.changelog }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
