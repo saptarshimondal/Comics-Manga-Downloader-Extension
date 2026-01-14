@@ -26,63 +26,49 @@ jobs:
           release-type: node
           skip-github-release: true
 
-  # 2) Only run when the commit pushed to master is the release commit
-  release_and_build:
-    name: Create GitHub Release + Build Assets
+  # 2) On release-commit push: build first, then create the GitHub Release + upload assets
+  build_then_release:
+    name: Build → Create Release → Upload Assets
     runs-on: ubuntu-latest
     needs: release_pr
 
-    # IMPORTANT: Only run this job when the push looks like a release merge
+    # Run only when the push looks like the release PR merge commit
     if: |
       contains(github.event.head_commit.message, 'chore(master): release') ||
       contains(github.event.head_commit.message, 'chore: release')
 
     steps:
-      - name: 🏷️ Release Please (GitHub Release only)
-        id: rp
-        uses: googleapis/release-please-action@v4
-        env:
-          LOG_LEVEL: debug
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target-branch: master
-          release-type: node
-          skip-github-pull-request: true
-
-      - name: 🧾 Debug outputs
-        run: |
-          echo '${{ toJson(steps.rp.outputs) }}'
-          echo "release_created=${{ steps.rp.outputs.release_created }}"
-          echo "tag_name=${{ steps.rp.outputs.tag_name }}"
-
-      - name: 📥 Checkout tag
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+      - name: 📥 Checkout master at this commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.rp.outputs.tag_name }}
+          fetch-depth: 0
 
       - name: 🔧 Setup Node.js
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: 📦 Install dependencies
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm ci
 
       - name: 🏗️ Build Firefox extension
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm run pack:firefox
 
       - name: 🏗️ Build Chrome extension
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
         run: npm run pack:chrome
 
-      - name: 📝 Prepare assets
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+      - name: 🏷️ Compute tag from package.json version
+        id: meta
         run: |
-          TAG="${{ steps.rp.outputs.tag_name }}"
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Will release tag: $TAG"
+
+      - name: 📝 Prepare assets
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
           mkdir -p release-assets
 
           FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
@@ -102,11 +88,22 @@ jobs:
 
           ls -lh release-assets/
 
-      - name: 📤 Upload release assets
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+      - name: 📄 Extract latest changelog entry
+        id: changelog
+        run: |
+          changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      # ✅ Create the GitHub Release only AFTER build succeeded
+      # This will also create the tag if it doesn't exist yet.
+      - name: 📤 Create GitHub Release + upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.rp.outputs.tag_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          body: ${{ steps.changelog.outputs.body }}
           files: release-assets/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
