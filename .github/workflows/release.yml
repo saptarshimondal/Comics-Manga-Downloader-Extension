@@ -21,12 +21,6 @@ jobs:
       !contains(github.event.head_commit.message, 'chore: release-please')
 
     steps:
-      - name: Debug commit info
-        run: |
-          echo "Commit author: ${{ github.event.head_commit.author.name }}"
-          echo "Commit message: ${{ github.event.head_commit.message }}"
-          echo "Commit SHA: ${{ github.event.head_commit.id }}"
-      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -87,7 +81,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
-          config-file: release-please-config.json
-          default-branch: master
-          # Only create PRs, don't create releases automatically
-          # Releases will be created by build.yml when PR is merged
+          release-type: node
