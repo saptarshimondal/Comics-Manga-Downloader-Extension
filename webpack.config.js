@@ -70,7 +70,7 @@ const options = {
 			      transform: function (content, path) {
 			        // generates the manifest file using the package.json informations
 			        const manifest = JSON.parse(content.toString())
-			        manifest.name = package.name;
+			        manifest.name = package.displayName || package.name;
 			        manifest.version = package.version;
 			        manifest.description = package.description;
 			        manifest.author = package.author;
@@ -99,6 +99,24 @@ const options = {
     	patterns: [{
     		from: "src/popup/icon",
     		to: "popup/icon"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/css",
+    		to: "popup/css"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/js/select2",
+    		to: "popup/js/select2"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/js/jquery.min.js",
+    		to: "popup/js/jquery.min.js"
     	}]
     }),
     new HtmlWebpackPlugin({

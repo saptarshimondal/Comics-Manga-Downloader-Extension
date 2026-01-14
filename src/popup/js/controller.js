@@ -85,30 +85,66 @@ const downloaderController = async function (fileName, downloadType, callback = 
 };
 
 
-export const searchController = function (e) {
-	const query = setState('query', e.target.value);
-	let images = getState('images');
+const applyFilters = function () {
+	const query = getState('query') || '';
+	const selectedDimensions = getState('selectedDimensionFilters') || [];
+	const images = getState('images');
+	const imageDimensions = getState('imageDimensions') || {};
 
-	const filteredImages = images.filter(({src, type}) => {
+	// Apply query filter
+	let filteredImages = images.filter(({src, type}) => {
 		if(type === 'url'){
 			return src.startsWith(query)
 		}
 		if(type === 'data'){
 			return src;
 		}
-	}).map(({src, type}) => {
-		return {'src': src, 'type': type, 'checked': true}
-	})
+	});
+
+	// Apply dimension filter (multiple dimensions)
+	if (selectedDimensions.length > 0) {
+		filteredImages = filteredImages.filter((img) => {
+			// Use unique key (src|type) to look up dimension
+			const imageKey = `${img.src}|${img.type}`;
+			const dim = imageDimensions[imageKey];
+			// Check if the dimension matches any of the selected dimensions
+			// If dimension is not yet loaded (undefined), exclude it from filtered results
+			return dim && selectedDimensions.includes(dim);
+		});
+	}
+
+	// Preserve checked state from current filteredImages if they exist
+	const currentFilteredImages = getState('filteredImages') || [];
+	const checkedStateMap = new Map();
+	currentFilteredImages.forEach(img => {
+		checkedStateMap.set(`${img.src}|${img.type}`, img.checked);
+	});
+
+	// Map to filteredImages format with checked state (preserve existing checked state)
+	filteredImages = filteredImages.map(({src, type}) => {
+		const key = `${src}|${type}`;
+		const wasChecked = checkedStateMap.has(key) ? checkedStateMap.get(key) : true;
+		return {'src': src, 'type': type, 'checked': wasChecked}
+	});
 
 	setState('filteredImages', filteredImages);
 	ImagesView.render(filteredImages);
 	SelectAllCheckBoxView.render(filteredImages);
 	DownloadView.render(filteredImages);
+}
 
+export const searchController = function (e) {
+	setState('query', e.target.value);
+	applyFilters();
 }
 
 export const clearSearchController = function (){
 	setState('query', '');
+}
+
+export const dimensionFilterController = function (selectedDimensions) {
+	setState('selectedDimensionFilters', selectedDimensions);
+	applyFilters();
 }
 
 
@@ -130,6 +166,7 @@ export const init = function ({images, title}) {
 	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
 	ImagesView.addHandlerDownloadSingleImage(downloadSingleImageController);
+	ImagesView.addHandlerDimensionFilter(dimensionFilterController);
 	SelectAllCheckBoxView.addHandlerSelectAll(selectAllController);
 	DownloadView.addHandlerDownloader(downloaderController);
 	SearchView.addHandlerSearch(searchController);
