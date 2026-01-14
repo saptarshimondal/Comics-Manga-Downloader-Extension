@@ -60,7 +60,7 @@ const options = {
 			      transform: function (content, path) {
 			        // generates the manifest file using the package.json informations
 			        const manifest = JSON.parse(content.toString())
-			        manifest.name = package.name;
+			        manifest.name = package.displayName || package.name;
 			        manifest.version = package.version;
 			        manifest.description = package.description;
 			        manifest.author = package.author;
