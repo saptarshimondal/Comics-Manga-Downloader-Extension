@@ -85,16 +85,17 @@ jobs:
           
           # Ensure CHANGELOG.md exists
           if [ ! -f CHANGELOG.md ]; then
-            cat > CHANGELOG.md << EOF
-# Changelog
-
-## [$PKG_VERSION]
-
-### Features
-- Initial release
-
-[$PKG_VERSION]: https://github.com/${{ github.repository }}/releases/tag/v$PKG_VERSION
-EOF
+            REPO_URL="${{ github.repository }}"
+            {
+              echo "# Changelog"
+              echo ""
+              echo "## [$PKG_VERSION]"
+              echo ""
+              echo "### Features"
+              echo "- Initial release"
+              echo ""
+              echo "[$PKG_VERSION]: https://github.com/${REPO_URL}/releases/tag/v${PKG_VERSION}"
+            } > CHANGELOG.md
             echo "Created CHANGELOG.md"
           fi
           
