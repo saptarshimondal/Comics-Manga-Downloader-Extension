@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.9](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.8...v1.4.9) (2026-01-14)
+
+
+### Bug Fixes
+
+* integrate release workflow and remove obsolete files ([9ebd9cc](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/9ebd9cc163ad52d3fb65899c0009162ee9b00134))
+* integrate release workflow and remove obsolete files ([00bfe77](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/00bfe77c1bf9e410b3e9748551fd39f91af566ff))
+* streamline branch specification and enhance logging in release w… ([d3f28e1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/d3f28e13ecdda87b9398e0a8f9954d413bcec9a6))
+* streamline branch specification and enhance logging in release workflow ([ff5761a](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/ff5761aecd0db0149200aa0495af87b1b18877af))
+* update pull request permissions and clean up workflow conditions ([e483997](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/e48399724c6cbfec21de2ef2232439ee598e0a61))
+* update pull request permissions and clean up workflow conditions ([cc5e7cf](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/cc5e7cf82d97ce85bb544e34282e00812d066555))
+* update workflow name for clarity ([9f552e9](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/9f552e9a7161acb515f2918cc3a5e63f83cc29a9))
+* update workflow name for clarity ([3192115](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/319211526f7f7990706499cce19c29553d979e6f))
+
 ## [1.4.8](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.7...v1.4.8) (2026-01-14)
 
 
