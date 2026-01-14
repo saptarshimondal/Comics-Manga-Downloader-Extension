@@ -31,15 +31,15 @@ jobs:
           fi
           node -e "const pkg = require('./package.json'); if (!pkg.version) { console.error('Error: package.json missing version'); process.exit(1); }"
 
-      - name: Bootstrap release-please manifest
+      - name: Ensure release-please manifest exists
         run: |
           if [ ! -f .release-please-manifest.json ]; then
             VERSION=$(node -e "console.log(require('./package.json').version)")
             echo "{\".\": \"$VERSION\"}" > .release-please-manifest.json
             echo "Created .release-please-manifest.json with version $VERSION"
-          else
-            echo ".release-please-manifest.json already exists"
           fi
+          echo "Manifest contents:"
+          cat .release-please-manifest.json
 
       - name: Release Please
         uses: googleapis/release-please-action@v4
