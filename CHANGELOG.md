@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.10](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.9...v1.4.10) (2026-01-14)
+
+
+### Bug Fixes
+
+* refine release workflow to build assets before creating GitHub R… ([87055cf](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/87055cfc00ee88fb6dde0227f0d4968ea22c51b3))
+* refine release workflow to build assets before creating GitHub Release ([2dae677](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/2dae6775d55474e22637433b18495a937bf953fd))
+
 ## [1.4.9](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.8...v1.4.9) (2026-01-14)
 
 
