@@ -6,6 +6,13 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build (e.g., v1.4.0)'
+        required: false
 
 permissions:
   contents: write
@@ -13,12 +20,69 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    # Only run on master if it's a release commit (version files changed)
+    # Also allow manual dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'release' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master' && 
+       (contains(github.event.head_commit.message, 'chore: release') ||
+        contains(github.event.head_commit.message, 'Release') ||
+        contains(github.event.head_commit.message, 'release-please') ||
+        github.event.head_commit.author.name == 'release-please[bot]' ||
+        contains(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'release')))
 
     steps:
       - name: 📥 Checkout repo
+        id: checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref }}
+      
+      - name: 🔍 Find release tag
+        id: find-tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [ -n "${{ github.event.release.tag_name }}" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            # Get latest tag from git (should be the one just created by release-please)
+            # Wait a moment for tag to be available if it was just created
+            sleep 2
+            TAG=$(git fetch --tags 2>/dev/null; git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -z "$TAG" ]; then
+              # Fallback to package.json version
+              PKG_VERSION=$(node -e "console.log(require('./package.json').version)")
+              TAG="v${PKG_VERSION}"
+              echo "⚠ No tag found, using package.json version: $TAG"
+            else
+              echo "✓ Found latest tag: $TAG"
+            fi
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Using tag: ${TAG}"
+          
+          # Checkout the tag if we're on master and tag exists
+          if [[ "${{ github.ref }}" == refs/heads/master ]]; then
+            if git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "Checking out tag: $TAG"
+              git checkout "$TAG"
+              echo "tag-checkout=true" >> $GITHUB_OUTPUT
+            else
+              echo "⚠ Tag $TAG not found, staying on current commit"
+              echo "Available tags:"
+              git tag --sort=-creatordate | head -5 || echo "No tags found"
+              echo "tag-checkout=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "tag-checkout=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -30,18 +94,38 @@ jobs:
 
       - name: ℹ️ Debug info
         run: |
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            echo "Triggered by: manual dispatch"
+          elif [ -n "${{ github.event.release.tag_name }}" ]; then
             TAG="${{ github.event.release.tag_name }}"
             echo "Triggered by: release event"
-          else
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
             echo "Triggered by: tag push"
+          else
+            # Get latest tag from git (should be the one just created by release-please)
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -z "$TAG" ]; then
+              # Try to get version from package.json
+              TAG="v$(node -e "console.log(require('./package.json').version)")"
+            fi
+            echo "Triggered by: push to master (release commit)"
           fi
           echo "Release tag: $TAG"
           echo "Release name: ${{ github.event.release.name }}"
           echo "Release ID: ${{ github.event.release.id }}"
           echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
+          if [ -n "${{ github.event.head_commit.id }}" ]; then
+            echo "Commit: ${{ github.event.head_commit.id }}"
+            echo "Author: ${{ github.event.head_commit.author.name }}"
+            echo "Message: ${{ github.event.head_commit.message }}"
+          fi
+          # List recent tags to verify
+          echo "Recent tags:"
+          git tag --sort=-creatordate | head -5 || echo "No tags found"
 
       - name: 🏗️ Build Firefox extension
         run: npm run pack:firefox
@@ -52,11 +136,7 @@ jobs:
       - name: 📝 Prepare release assets
         id: prepare-assets
         run: |
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
-            TAG="${{ github.event.release.tag_name }}"
-          else
-            TAG="${GITHUB_REF#refs/tags/}"
-          fi
+          TAG="${{ steps.find-tag.outputs.tag }}"
           echo "Preparing assets for tag: $TAG"
           
           # Create release directory
