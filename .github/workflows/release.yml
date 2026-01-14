@@ -18,6 +18,54 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Sync package-lock.json and manifest
+        run: |
+          PKG_VERSION=$(node -e "console.log(require('./package.json').version)")
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -n "$LATEST_TAG" ]; then
+            LATEST_VERSION=${LATEST_TAG#v}
+            echo "Latest tag: $LATEST_TAG -> version: $LATEST_VERSION"
+          else
+            LATEST_VERSION=$PKG_VERSION
+          fi
+          
+          echo "Package.json version: $PKG_VERSION"
+          echo "Latest released version: $LATEST_VERSION"
+          
+          # Sync package-lock.json version with package.json
+          # This is critical - release-please reads version from package-lock.json
+          if [ -f package-lock.json ]; then
+            LOCK_VERSION=$(node -e "try { const lock = require('./package-lock.json'); console.log(lock.version || ''); } catch(e) { console.log(''); }")
+            if [ "$LOCK_VERSION" != "$PKG_VERSION" ]; then
+              echo "Fixing package-lock.json version: $LOCK_VERSION -> $PKG_VERSION"
+              node -e "
+                const fs = require('fs');
+                const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+                lock.version = '$PKG_VERSION';
+                fs.writeFileSync('package-lock.json', JSON.stringify(lock, null, 2));
+              "
+              echo "Updated package-lock.json version to match package.json"
+            fi
+          fi
+          
+          # Set manifest to latest released version (from tag)
+          echo "{\".\": \"$LATEST_VERSION\"}" > .release-please-manifest.json
+          echo "Manifest set to: $LATEST_VERSION"
+          
+          echo "=== Final state ==="
+          echo "Manifest:"
+          cat .release-please-manifest.json
+          echo "package.json: $PKG_VERSION"
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json: $(node -e "console.log(require('./package-lock.json').version)")"
+          fi
+
       - name: Release Please
         uses: googleapis/release-please-action@v4
         env:
@@ -25,4 +73,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
-          release-type: node
+          config-file: release-please-config.json
