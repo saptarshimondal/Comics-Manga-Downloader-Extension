@@ -1,10 +1,8 @@
-name: Release and Build Assets
+name: Release Please + Build
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - master
+  push:
+    branches: [master]
 
 permissions:
   contents: write
@@ -12,17 +10,16 @@ permissions:
   issues: write
 
 jobs:
-  release_and_build:
-    if: |
-      github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.head.ref, 'release-please')
-
+  release_build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) First, backfill/create GitHub Release if a release PR was merged
       - name: 🏷️ Release Please (GitHub Release only)
-        id: rp
+        id: ghrel
         uses: googleapis/release-please-action@v4
+        env:
+          LOG_LEVEL: debug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
@@ -31,51 +28,51 @@ jobs:
 
       - name: 🧾 Debug outputs
         run: |
-          echo "Outputs JSON:"
-          echo '${{ toJson(steps.rp.outputs) }}'
-          echo "release_created=${{ steps.rp.outputs.release_created }}"
-          echo "tag_name=${{ steps.rp.outputs.tag_name }}"
+          echo '${{ toJson(steps.ghrel.outputs) }}'
+          echo "release_created=${{ steps.ghrel.outputs.release_created }}"
+          echo "tag_name=${{ steps.ghrel.outputs.tag_name }}"
 
+      # 2) If we created a release, build + upload assets to that tag
       - name: 📥 Checkout tag
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.rp.outputs.tag_name }}
+          ref: ${{ steps.ghrel.outputs.tag_name }}
 
       - name: 🔧 Setup Node.js
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: 📦 Install dependencies
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         run: npm ci
 
       - name: 🏗️ Build Firefox extension
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         run: npm run pack:firefox
 
       - name: 🏗️ Build Chrome extension
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         run: npm run pack:chrome
 
       - name: 📝 Prepare assets
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         run: |
-          TAG="${{ steps.rp.outputs.tag_name }}"
+          TAG="${{ steps.ghrel.outputs.tag_name }}"
           mkdir -p release-assets
 
           FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
           if [ -z "$FIREFOX_ZIP" ] || [ ! -f "$FIREFOX_ZIP" ]; then
-            echo "❌ Firefox extension zip not found"
+            echo "❌ Firefox zip not found"
             ls -la web-ext-artifacts/firefox || true
             exit 1
           fi
           cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
 
           if [ ! -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
-            echo "❌ Chrome extension zip not found"
+            echo "❌ Chrome zip not found"
             ls -la web-ext-artifacts/chrome || true
             exit 1
           fi
@@ -83,21 +80,22 @@ jobs:
 
           ls -lh release-assets/
 
-      - name: 📄 Extract latest changelog entry
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
-        id: changelog
-        run: |
-          changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
-          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$changelog" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
       - name: 📤 Upload release assets
-        if: ${{ steps.rp.outputs.release_created == 'true' }}
+        if: ${{ steps.ghrel.outputs.release_created == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.rp.outputs.tag_name }}
+          tag_name: ${{ steps.ghrel.outputs.tag_name }}
           files: release-assets/*.zip
-          body: ${{ steps.changelog.outputs.changelog }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3) Finally, create/update the Release PR for the *next* release
+      - name: 🚀 Release Please (Release PR only)
+        uses: googleapis/release-please-action@v4
+        env:
+          LOG_LEVEL: debug
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: master
+          release-type: node
+          skip-github-release: true
