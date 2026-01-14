@@ -2,8 +2,7 @@ name: Release PR (Release Please)
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
 
 permissions:
   contents: write
@@ -15,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Release Please (PR only)
-        id: rp
         uses: googleapis/release-please-action@v4
+        env:
+          LOG_LEVEL: debug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
