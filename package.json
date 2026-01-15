@@ -20,23 +20,23 @@
     "pack:all": "node scripts/pack-all.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.2",
-    "@babel/preset-env": "^7.18.2",
-    "babel-loader": "^8.2.5",
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
+    "babel-loader": "^10.0.0",
     "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "html-loader": "^3.1.0",
-    "html-webpack-plugin": "^5.5.0",
-    "imports-loader": "^4.0.0",
-    "web-ext": "^6.8.0",
-    "webextension-polyfill": "^0.9.0",
-    "webpack": "^5.73.0",
-    "webpack-cli": "^4.9.2"
+    "copy-webpack-plugin": "^13.0.1",
+    "html-loader": "^5.1.0",
+    "html-webpack-plugin": "^5.6.5",
+    "imports-loader": "^5.0.0",
+    "web-ext": "^9.2.0",
+    "webextension-polyfill": "^0.12.0",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "file-saver": "^2.0.5",
     "jquery": "^3.7.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^4.0.0",
     "select2": "^4.1.0-rc.0"
   }
 }
