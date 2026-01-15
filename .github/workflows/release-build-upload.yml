@@ -4,87 +4,56 @@ on:
   pull_request:
     types: [closed]
     branches: [master]
-  workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: release-build-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build_then_release:
     if: |
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.merged == true &&
-       startsWith(github.event.pull_request.title, 'chore(master): release')) ||
-      (github.event_name == 'workflow_dispatch')
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.title, 'chore(master): release') ||
+        startsWith(github.event.pull_request.title, 'chore: release')
+      )
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout the merge commit
+      - name: Checkout merge commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: 📦 Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run pack:firefox
+      - run: npm run pack:chrome
 
-      - name: 🏗️ Build Firefox extension
-        run: npm run pack:firefox
-
-      - name: 🏗️ Build Chrome extension
-        run: npm run pack:chrome
-
-      - name: 🏷️ Compute tag from package.json version
-        id: meta
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          TAG="v$VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: 📝 Prepare assets
-        run: |
-          TAG="${{ steps.meta.outputs.tag }}"
-          mkdir -p release-assets
-
-          FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
-          if [ -z "$FIREFOX_ZIP" ] || [ ! -f "$FIREFOX_ZIP" ]; then
-            echo "❌ Firefox extension zip not found"
-            ls -la web-ext-artifacts/firefox || true
-            exit 1
-          fi
-          cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
-
-          if [ ! -f web-ext-artifacts/chrome/chrome-extension.zip ]; then
-            echo "❌ Chrome extension zip not found"
-            ls -la web-ext-artifacts/chrome || true
-            exit 1
-          fi
-          cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${TAG}-chrome.zip"
-
-          ls -lh release-assets/
-
-      - name: 🏷️ Create tag + GitHub Release (release-only)
+      - name: Create tag + GitHub Release (release-only)
         id: rp_release
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
-          release-type: node
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
           skip-github-pull-request: true
 
-      - name: 📤 Upload built zips to the GitHub Release
+      - name: Upload built zips to the GitHub Release
         if: ${{ steps.rp_release.outputs.release_created == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ steps.rp_release.outputs.tag_name }}" release-assets/*.zip --clobber
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+
+          mkdir -p release-assets
+          FIREFOX_ZIP=$(find web-ext-artifacts/firefox -name "*.zip" -type f | head -n 1)
+          cp "$FIREFOX_ZIP" "release-assets/comics-manga-downloader-${TAG}-firefox.zip"
+          cp web-ext-artifacts/chrome/chrome-extension.zip "release-assets/comics-manga-downloader-${TAG}-chrome.zip"
+
+          gh release upload "$TAG" release-assets/*.zip --clobber
