@@ -1,64 +1,32 @@
-name: Release Please
+name: Build and Release
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches: [master]
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "Run mode"
-        required: true
-        default: "pr"
-        type: choice
-        options:
-          - pr
-          - release
 
 permissions:
   contents: write
-  pull-requests: write
-  issues: write
 
 concurrency:
-  group: release-please-${{ github.ref }}
+  group: release-build-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  # A) Normal merges -> create/update Release Please PR only
-  release_pr:
-    name: Create/Update Release PR
-    runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'push' &&
-        !contains(github.event.head_commit.message, 'chore(master): release') &&
-        !contains(github.event.head_commit.message, 'chore: release')
-      ) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pr')
-
-    steps:
-      - name: 🚀 Release Please (PR only)
-        uses: googleapis/release-please-action@v4
-        env:
-          LOG_LEVEL: debug
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target-branch: master
-          release-type: node
-          skip-github-release: true  # PR-only
-
-  # B) Release PR merged -> build first -> create tag+release -> upload assets
   build_then_release:
-    name: Build → Create Release → Upload Assets
-    runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' &&
-        (contains(github.event.head_commit.message, 'chore(master): release') ||
-         contains(github.event.head_commit.message, 'chore: release'))
-      ) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'release')
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.title, 'chore(master): release')) ||
+      (github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout master at this commit
+      - name: 📥 Checkout the merge commit
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
 
       - name: 🔧 Setup Node.js
@@ -82,7 +50,6 @@ jobs:
           TAG="v$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Will release tag: $TAG"
 
       - name: 📝 Prepare assets
         run: |
@@ -113,7 +80,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
           release-type: node
-          skip-github-pull-request: true  # release-only
+          skip-github-pull-request: true
 
       - name: 📤 Upload built zips to the GitHub Release
         if: ${{ steps.rp_release.outputs.release_created == 'true' }}
