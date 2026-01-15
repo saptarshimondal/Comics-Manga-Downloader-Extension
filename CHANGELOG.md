@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.10...v1.5.0) (2026-01-15)
+
+
+### Features
+
+* implement download state persistence and restoration in popup ([3aff104](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/3aff104d3cc0d453a220b2e0cde11f40cd96589d))
+* implement download state persistence and restoration in popup ([97b33be](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/97b33beb219d02a3c42ee56ec6b40a7251969e26))
+
+
+### Bug Fixes
+
+* enhance CI/CD pipeline with workflow dispatch options for releas… ([7e4ffa6](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/7e4ffa6128437c928ffef4ad60fbc0e43c2fc482))
+* enhance CI/CD pipeline with workflow dispatch options for release mode ([33b66e8](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/33b66e8dd33e1f5cce6421789725b4726cce4aab))
+
 ## [1.4.10](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.9...v1.4.10) (2026-01-14)
 
 
