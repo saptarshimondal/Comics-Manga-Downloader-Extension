@@ -211,8 +211,12 @@ export const downloadSingleImageController = async function (url) {
 }
 
 
-export const init = function ({images, title}) {
+export const init = async function ({images, title}) {
 	initState({images, title})
+	
+	// Restore download state first, before rendering
+	await DownloadView.restoreDownloadState();
+	
 	// ImagesView.addHandlerRender(imagesController);
 	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
