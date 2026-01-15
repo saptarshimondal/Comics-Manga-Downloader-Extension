@@ -3,26 +3,20 @@ name: Release Please PR
 on:
   push:
     branches: [master]
-  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
 
-concurrency:
-  group: release-please-pr-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   release_pr:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
-        env:
-          LOG_LEVEL: debug
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
-          release-type: node
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
           skip-github-release: true
