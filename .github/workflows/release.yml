@@ -2,19 +2,38 @@ name: Release Please
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "pr"
+        type: choice
+        options:
+          - pr
+          - release
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
 
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  # 1) Always run on push to master: create/update Release PR ONLY
+  # A) Normal merges -> create/update Release Please PR only
   release_pr:
     name: Create/Update Release PR
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' &&
+        !contains(github.event.head_commit.message, 'chore(master): release') &&
+        !contains(github.event.head_commit.message, 'chore: release')
+      ) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pr')
+
     steps:
       - name: 🚀 Release Please (PR only)
         uses: googleapis/release-please-action@v4
@@ -24,18 +43,17 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: master
           release-type: node
-          skip-github-release: true
+          skip-github-release: true  # PR-only
 
-  # 2) On release-commit push: build first, then create the GitHub Release + upload assets
+  # B) Release PR merged -> build first -> create tag+release -> upload assets
   build_then_release:
     name: Build → Create Release → Upload Assets
     runs-on: ubuntu-latest
-    needs: release_pr
-
-    # Run only when the push looks like the release PR merge commit
     if: |
-      contains(github.event.head_commit.message, 'chore(master): release') ||
-      contains(github.event.head_commit.message, 'chore: release')
+      (github.event_name == 'push' &&
+        (contains(github.event.head_commit.message, 'chore(master): release') ||
+         contains(github.event.head_commit.message, 'chore: release'))
+      ) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'release')
 
     steps:
       - name: 📥 Checkout master at this commit
@@ -88,22 +106,18 @@ jobs:
 
           ls -lh release-assets/
 
-      - name: 📄 Extract latest changelog entry
-        id: changelog
-        run: |
-          changelog=$(awk '/^## /{i++} i==2{exit} i==1{print}' CHANGELOG.md | tail -n +2)
-          echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$changelog" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-      # ✅ Create the GitHub Release only AFTER build succeeded
-      # This will also create the tag if it doesn't exist yet.
-      - name: 📤 Create GitHub Release + upload assets
-        uses: softprops/action-gh-release@v2
+      - name: 🏷️ Create tag + GitHub Release (release-only)
+        id: rp_release
+        uses: googleapis/release-please-action@v4
         with:
-          tag_name: ${{ steps.meta.outputs.tag }}
-          name: ${{ steps.meta.outputs.tag }}
-          body: ${{ steps.changelog.outputs.body }}
-          files: release-assets/*.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: master
+          release-type: node
+          skip-github-pull-request: true  # release-only
+
+      - name: 📤 Upload built zips to the GitHub Release
+        if: ${{ steps.rp_release.outputs.release_created == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.rp_release.outputs.tag_name }}" release-assets/*.zip --clobber
