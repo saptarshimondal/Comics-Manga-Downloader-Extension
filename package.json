@@ -1,7 +1,7 @@
 {
   "name": "comics-manga-downloader",
   "displayName": "Comics / Manga Downloader",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "A cross browser extension to download comics / manga as pdf file from any site.",
   "author": "Saptarshi Mondal <mondalsaptarshi7@gmail.com>",
   "license": "MIT",
