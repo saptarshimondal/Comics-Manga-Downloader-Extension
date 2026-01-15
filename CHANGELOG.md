@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/comics-manga-downloader-v1.5.0...comics-manga-downloader-v1.5.1) (2026-01-15)
+
+
+### Bug Fixes
+
+* test release automation ([ede0d25](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/ede0d253444b882e987c7a92174688807febd809))
+* test release automation ([222711c](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/222711c668f28163a8f29823f52be31fd55ddd72))
+
 ## [1.5.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.4.10...v1.5.0) (2026-01-15)
 
 
