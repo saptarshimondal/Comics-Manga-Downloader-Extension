@@ -162,6 +162,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Forward progress messages from content script to popup
   if (message.type === 'downloadProgress') {
     console.log('Background script: Received progress message from content script:', message.progress, message.text);
+    // When an error occurred, clear download state so the UI doesn't get stuck on "Downloading PDF"
+    // This is important when the popup is closed at error time - otherwise next open restores stale state
+    if (message.error) {
+      browser.storage.local.remove('downloadState').catch(() => {});
+    }
     // Explicitly forward to popup by sending a new message
     // This ensures the popup receives it even if the original message doesn't reach it
     browser.runtime.sendMessage({

@@ -45,8 +45,16 @@ class DownloadView extends View {
 			console.log('DownloadView: Retrieved state:', savedState);
 			
 			if (savedState && savedState.isDownloading) {
+				// Treat inconsistent state as stale (e.g. downloadComplete true but progress < 100)
+				// This can occur when the popup closed during the final progress updates
+				if (savedState.downloadComplete && (savedState.progress ?? 0) < 100) {
+					console.log('DownloadView: Stale/inconsistent state detected, clearing:', savedState);
+					await clearDownloadState();
+					return false;
+				}
+
 				console.log('DownloadView: Restoring download state:', savedState);
-				
+
 				// Ensure DOM elements exist - retry if not ready
 				let retries = 0;
 				while ((!this._overlay || !this._progressFill || !this._progressText || !this._parent) && retries < 5) {
