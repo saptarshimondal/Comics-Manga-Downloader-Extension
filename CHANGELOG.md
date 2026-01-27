@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.3](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.5.2...v1.5.3) (2026-01-27)
+
+
+### Bug Fixes
+
+* handle stale download state and clear on error ([7dc47cb](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/7dc47cbed3fe6eae9b8a4da5d32bad72d7b0ebd6))
+* handle stale download state and clear on error ([28576cf](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/28576cffb61435fce7dd1b95ed9c39ad13dc8232))
+
 ## [1.5.2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.5.1...v1.5.2) (2026-01-15)
 
 
