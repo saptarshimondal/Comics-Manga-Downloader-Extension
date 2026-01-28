@@ -9,6 +9,8 @@ class ImagesView extends View {
     super(selector);
     this._card = this._parent.querySelector('.card');
     this._dimensionFilter = document.getElementById('dimensionFilter');
+    this._selectedDimensions = [];
+    this._dimensionFilterHandler = null;
 
     // Performance optimization: debounce dropdown updates
     this._dropdownUpdatePending = false;
@@ -16,101 +18,115 @@ class ImagesView extends View {
     this._pendingDimensions = new Set();
     this._lastKnownDimensions = new Set();
 
-    // Initialize Select2 on dimension filter when DOM is ready
-    this._initSelect2();
-
     // Listen for <img> load events inside the container (capture = true)
     // so we can update sizes even when images load after render.
     this._parent.addEventListener('load', this._onImgLoad.bind(this), true);
   }
 
-  _initSelect2() {
+  addHandlerDimensionFilter(handler) {
     if (!this._dimensionFilter) return;
-    
-    // Wait for jQuery and Select2 to be loaded
-    const initSelect2 = () => {
-      if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-        this._$dimensionFilter = jQuery(this._dimensionFilter);
-        this._$dimensionFilter.select2({
-          placeholder: 'Select dimensions...',
-          allowClear: false,
-          width: '100%',
-          closeOnSelect: false
-        });
-      } else if (typeof $ !== 'undefined' && $.fn.select2) {
-        this._$dimensionFilter = $(this._dimensionFilter);
-        this._$dimensionFilter.select2({
-          placeholder: 'Select dimensions...',
-          allowClear: false,
-          width: '100%',
-          closeOnSelect: false
-        });
-      } else {
-        // Retry after a short delay if jQuery/Select2 not yet loaded
-        setTimeout(initSelect2, 50);
-      }
-    };
+    this._dimensionFilterHandler = handler;
 
-    // Try to initialize immediately, or wait for DOMContentLoaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initSelect2);
+    const trigger = this._dimensionFilter.querySelector('.dimension-filter-trigger');
+    const dropdown = this._dimensionFilter.querySelector('.dimension-filter-dropdown');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._dimensionFilter.classList.toggle('open');
+    });
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this._dimensionFilter.classList.toggle('open');
+      }
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const option = e.target.closest('.dimension-filter-option');
+      if (!option) return;
+      const value = option.dataset.value;
+      if (value === '') {
+        this._selectedDimensions = [];
+        this._syncDimensionOptionsSelection();
+        this._updateDimensionFilterDisplay();
+        handler([]);
+      } else {
+        const idx = this._selectedDimensions.indexOf(value);
+        if (idx >= 0) {
+          this._selectedDimensions.splice(idx, 1);
+        } else {
+          this._selectedDimensions.push(value);
+          this._selectedDimensions.sort((a, b) => {
+            const [w1, h1] = a.split('x').map(Number);
+            const [w2, h2] = b.split('x').map(Number);
+            if (w1 !== w2) return w1 - w2;
+            return h1 - h2;
+          });
+        }
+        this._syncDimensionOptionsSelection();
+        this._updateDimensionFilterDisplay();
+        handler(this._selectedDimensions.length ? this._selectedDimensions.slice() : []);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!this._dimensionFilter.contains(e.target)) {
+        this._dimensionFilter.classList.remove('open');
+      }
+    });
+  }
+
+  _updateDimensionFilterDisplay() {
+    const placeholder = this._dimensionFilter.querySelector('.dimension-filter-placeholder');
+    const choicesEl = this._dimensionFilter.querySelector('.dimension-filter-choices');
+    if (!placeholder || !choicesEl) return;
+    if (this._selectedDimensions.length === 0) {
+      placeholder.style.display = '';
+      choicesEl.style.display = 'none';
+      choicesEl.innerHTML = '';
     } else {
-      initSelect2();
+      placeholder.style.display = 'none';
+      choicesEl.style.display = 'flex';
+      choicesEl.innerHTML = this._selectedDimensions.map(dim => {
+        const [w, h] = dim.split('x');
+        const label = `${w} x ${h}`;
+        return `<span class="dimension-filter-choice" data-value="${dim}">${label}<button type="button" class="remove" aria-label="Remove">&#215;</button></span>`;
+      }).join('');
+      choicesEl.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const choice = e.target.closest('.dimension-filter-choice');
+          if (choice) {
+            const val = choice.dataset.value;
+            this._selectedDimensions = this._selectedDimensions.filter(d => d !== val);
+            this._syncDimensionOptionsSelection();
+            this._updateDimensionFilterDisplay();
+            if (this._dimensionFilterHandler) {
+              this._dimensionFilterHandler(this._selectedDimensions.length ? this._selectedDimensions.slice() : []);
+            }
+          }
+        });
+      });
     }
   }
 
-  addHandlerDimensionFilter(handler) {
-    if (!this._dimensionFilter) return;
-
-    const setupHandler = () => {
-      if (this._$dimensionFilter && this._$dimensionFilter.data('select2')) {
-        // Select2 is initialized
-        this._$dimensionFilter.on('change', (e) => {
-          const selectedValues = this._$dimensionFilter.val() || [];
-          
-          // If "All dimensions" is selected, clear all other selections and show all images
-          if (selectedValues.includes('')) {
-            // Clear all other selections
-            this._$dimensionFilter.val(['']).trigger('change');
-            handler([]);
-          } else {
-            // Use only the selected dimension values
-            handler(selectedValues);
-          }
-        });
-      } else {
-        // Fallback to native change event
-        this._dimensionFilter.addEventListener('change', (e) => {
-          const selectedOptions = Array.from(e.target.selectedOptions);
-          const selectedValues = selectedOptions.map(option => option.value);
-          // If "All dimensions" is selected or nothing is selected, show all
-          if (selectedValues.length === 0 || selectedValues.includes('')) {
-            // Clear all other selections if "All dimensions" was selected
-            if (selectedValues.includes('')) {
-              Array.from(e.target.options).forEach(opt => {
-                if (opt.value !== '') opt.selected = false;
-              });
-            }
-            handler([]);
-          } else {
-            // Use only the selected dimension values
-            handler(selectedValues);
-          }
-        });
-      }
-    };
-
-    // Wait a bit for Select2 to initialize
-    setTimeout(setupHandler, 100);
+  _syncDimensionOptionsSelection() {
+    const dropdown = this._dimensionFilter.querySelector('.dimension-filter-dropdown');
+    if (!dropdown) return;
+    dropdown.querySelectorAll('.dimension-filter-option').forEach(opt => {
+      const v = opt.dataset.value;
+      opt.classList.toggle('selected', v === '' ? this._selectedDimensions.length === 0 : this._selectedDimensions.includes(v));
+    });
   }
 
   // Override render so we can update dimensions right after DOM is inserted
   render(data) {
     super.render(data);
+
     // Reset dimension tracking for new render
     this._lastKnownDimensions.clear();
     this._pendingDimensions.clear();
-    
+
     // First, set dimensions from data if provided (from content script)
     // This avoids needing to load images just to get dimensions
     this._setDimensionsFromData(data);
@@ -124,13 +140,15 @@ class ImagesView extends View {
     const imageDimensions = getState('imageDimensions') || {};
     
     data.forEach((img, i) => {
-      if (img.width && img.height) {
-        const dimString = `${img.width}x${img.height}`;
+      if (img.width != null && img.height != null) {
+        const w = Number(img.width);
+        const h = Number(img.height);
+        const dimString = `${w}x${h}`;
         const card = this._parent.querySelector(`#card_${i}`);
         if (card) {
           const dimsEl = card.querySelector('.image_dims');
           if (dimsEl) {
-            dimsEl.textContent = `${img.width} × ${img.height}px`;
+            dimsEl.textContent = `${w} x ${h}px`;
             card.dataset.dimensions = dimString;
           }
           
@@ -160,7 +178,7 @@ class ImagesView extends View {
 
     this._data.forEach(function (img, i) {
       // Use provided dimensions if available, otherwise show "Loading..."
-      const dimText = (img.width && img.height) ? `${img.width} × ${img.height}px` : 'Loading…';
+      const dimText = (img.width != null && img.height != null) ? `${Number(img.width)} x ${Number(img.height)}px` : 'Loading…';
       
       markup += `
         <div data-id="${i}" id="card_${i}" class="card ${img.checked ? 'checked' : ''}" style="min-height: 200px;">
@@ -242,7 +260,7 @@ class ImagesView extends View {
 
     if (w && h) {
       const dimString = `${w}x${h}`;
-      dimsEl.textContent = `${w} × ${h}px`;
+      dimsEl.textContent = `${w} x ${h}px`;
       
       // Store dimensions in the card's data attribute
       card.dataset.dimensions = dimString;
@@ -346,131 +364,62 @@ class ImagesView extends View {
   _updateDimensionDropdown() {
     if (!this._dimensionFilter) return;
 
-    // Get dimensions from model
-    const imageDimensions = getState('imageDimensions') || {};
+    const dropdown = this._dimensionFilter.querySelector('.dimension-filter-dropdown');
+    if (!dropdown) return;
 
-    // Collect unique dimensions
+    const imageDimensions = getState('imageDimensions') || {};
     const uniqueDimensions = new Set();
     Object.values(imageDimensions).forEach((dim) => {
       if (dim) uniqueDimensions.add(dim);
     });
 
-    // Check if we actually have new dimensions to add
     const existingOptions = new Set();
-    Array.from(this._dimensionFilter.options).forEach(opt => {
-      if (opt.value !== '') {
-        existingOptions.add(opt.value);
-      }
+    dropdown.querySelectorAll('.dimension-filter-option').forEach(opt => {
+      if (opt.dataset.value !== '') existingOptions.add(opt.dataset.value);
     });
 
-    // Only process if there are actually new dimensions
     const newDimensions = Array.from(uniqueDimensions).filter(dim => !existingOptions.has(dim));
-    
-    // If no new dimensions and we've already processed all known dimensions, skip
-    if (newDimensions.length === 0 && 
+    if (newDimensions.length === 0 &&
         Array.from(uniqueDimensions).every(dim => this._lastKnownDimensions.has(dim))) {
       return;
     }
 
-    // Get current user selection BEFORE any modifications - this is critical!
-    // Use Select2's val() if available, otherwise fallback to native
-    let currentSelected = [];
-    if (this._$dimensionFilter && this._$dimensionFilter.data('select2')) {
-      currentSelected = this._$dimensionFilter.val() || [];
-    } else {
-      currentSelected = Array.from(this._dimensionFilter.selectedOptions).map(opt => opt.value);
-    }
-    
-    // Ensure "All dimensions" option exists
-    let allOption = this._dimensionFilter.querySelector('option[value=""]');
-    if (!allOption) {
-      allOption = document.createElement('option');
-      allOption.value = '';
-      allOption.textContent = 'All dimensions';
-      this._dimensionFilter.insertBefore(allOption, this._dimensionFilter.firstChild);
-    }
-    
     if (newDimensions.length > 0) {
-      // Sort new dimensions by width then height
-      const sortedNewDimensions = newDimensions.sort((a, b) => {
+      const sortedNew = newDimensions.sort((a, b) => {
         const [w1, h1] = a.split('x').map(Number);
         const [w2, h2] = b.split('x').map(Number);
         if (w1 !== w2) return w1 - w2;
         return h1 - h2;
       });
 
-      // OPTIMIZATION: Build all options first, then insert in batch
-      // This is much faster than inserting one-by-one
-      const optionsToInsert = sortedNewDimensions.map((dim) => {
-        const [w, h] = dim.split('x');
-        const option = document.createElement('option');
-        option.value = dim;
-        option.textContent = `${w} × ${h}`;
-        return { option, dim, w: Number(w), h: Number(h) };
-      });
-
-      // Get all existing dimension options (excluding "All dimensions")
-      const existingDimOptions = Array.from(this._dimensionFilter.options)
-        .filter(opt => opt.value !== '')
+      const existingDimOptions = Array.from(dropdown.querySelectorAll('.dimension-filter-option'))
+        .filter(opt => opt.dataset.value !== '')
         .map(opt => ({
-          option: opt,
-          dim: opt.value,
-          w: Number(opt.value.split('x')[0]),
-          h: Number(opt.value.split('x')[1])
+          el: opt,
+          dim: opt.dataset.value,
+          w: Number(opt.dataset.value.split('x')[0]),
+          h: Number(opt.dataset.value.split('x')[1])
         }));
 
-      // Merge and sort all options together
-      const allDimOptions = [...existingDimOptions, ...optionsToInsert].sort((a, b) => {
-        if (a.w !== b.w) return a.w - b.w;
-        return a.h - b.h;
+      const optionsToInsert = sortedNew.map((dim) => {
+        const [w, h] = dim.split('x');
+        const el = document.createElement('div');
+        el.className = 'dimension-filter-option';
+        el.dataset.value = dim;
+        el.textContent = `${w} x ${h}`;
+        return { el, dim, w: Number(w), h: Number(h) };
       });
 
-      // Remove all existing dimension options (keep "All dimensions")
-      existingDimOptions.forEach(({ option }) => {
-        if (option.parentNode) {
-          option.parentNode.removeChild(option);
-        }
-      });
+      const allDimOptions = [...existingDimOptions.map(o => ({ el: o.el, dim: o.dim, w: o.w, h: o.h })), ...optionsToInsert]
+        .sort((a, b) => (a.w !== b.w ? a.w - b.w : a.h - b.h));
 
-      // Insert all options in sorted order
-      allDimOptions.forEach(({ option }) => {
-        this._dimensionFilter.appendChild(option);
-      });
-
-      // Update known dimensions cache
+      existingDimOptions.forEach(({ el }) => el.remove());
+      allDimOptions.forEach(({ el }) => dropdown.appendChild(el));
       newDimensions.forEach(dim => this._lastKnownDimensions.add(dim));
+    }
 
-      // If Select2 is initialized, trigger update to refresh the dropdown
-      if (this._$dimensionFilter && this._$dimensionFilter.data('select2')) {
-        // Use a more efficient Select2 update method
-        this._$dimensionFilter.trigger('change.select2');
-      }
-    }
-    
-    // CRITICAL: Restore the user's selection that was captured at the start
-    if (this._$dimensionFilter && this._$dimensionFilter.data('select2')) {
-      // Use Select2's API to restore selection (only if selection changed)
-      const currentVal = this._$dimensionFilter.val() || [];
-      const needsUpdate = currentVal.length !== currentSelected.length ||
-        !currentSelected.every(val => currentVal.includes(val));
-      
-      if (needsUpdate) {
-        this._$dimensionFilter.val(currentSelected).trigger('change');
-      }
-    } else {
-      // Fallback to native selection
-      const currentNativeSelected = Array.from(this._dimensionFilter.selectedOptions).map(opt => opt.value);
-      const needsUpdate = currentNativeSelected.length !== currentSelected.length ||
-        !currentSelected.every(val => currentNativeSelected.includes(val));
-      
-      if (needsUpdate) {
-        Array.from(this._dimensionFilter.options).forEach(opt => opt.selected = false);
-        currentSelected.forEach(val => {
-          const option = this._dimensionFilter.querySelector(`option[value="${val}"]`);
-          if (option) option.selected = true;
-        });
-      }
-    }
+    this._syncDimensionOptionsSelection();
+    this._updateDimensionFilterDisplay();
   }
 }
 

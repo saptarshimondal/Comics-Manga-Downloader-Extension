@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const webpack = require('webpack');
 const DIST_DIR = path.resolve(__dirname, 'dist');
 const SRC_DIR = path.resolve(__dirname, 'src');
@@ -16,9 +17,11 @@ const package = require('./package');
 
 const options = {
 	mode: "development",
-  /*performance: {
-    hints: false
-  },*/
+  performance: {
+    hints: false,
+    maxAssetSize: 512000,
+    maxEntrypointSize: 512000
+  },
   devtool: 'cheap-module-source-map', // to fix EvalError
 	entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
@@ -104,25 +107,16 @@ const options = {
     new CopyWebpackPlugin({
     	patterns: [{
     		from: "src/popup/css",
-    		to: "popup/css"
-    	}]
-    }),
-    new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/popup/js/select2",
-    		to: "popup/js/select2"
-    	}]
-    }),
-    new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/popup/js/jquery.min.js",
-    		to: "popup/js/jquery.min.js"
+    		to: "css"
     	}]
     }),
     new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "popup", "index.html"),
+      templateContent: fs.readFileSync(path.join(SRC_DIR, "popup", "index.html"), "utf8"),
       filename: "popup.html",
-      chunks: ["popup"]
+      chunks: ["popup"],
+      inject: "body",
+      scriptLoading: "blocking",
+      publicPath: "./"
     }),
     /*new HtmlWebpackPlugin({
       template: path.join(SRC_DIR, "options", "index.html"),

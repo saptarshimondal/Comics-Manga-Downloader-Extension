@@ -15,8 +15,8 @@
     "dev:firefox": "webpack -w --config webpack.config.js",
     "dev:chrome": "webpack -w --config webpack.config.chrome.js",
     "ext": "web-ext run --source-dir ./dist/",
-    "pack:firefox": "webpack --config webpack.config.js && web-ext build --overwrite-dest --source-dir ./dist --artifacts-dir ./web-ext-artifacts/firefox",
-    "pack:chrome": "webpack --config webpack.config.chrome.js && node scripts/pack-chrome.js",
+    "pack:firefox": "node scripts/pack-firefox.js",
+    "pack:chrome": "node scripts/pack-chrome-runner.js",
     "pack:all": "node scripts/pack-all.js"
   },
   "devDependencies": {
