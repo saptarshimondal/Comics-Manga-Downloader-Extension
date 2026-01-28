@@ -32,8 +32,8 @@ jobs:
           node-version: 18
 
       - run: npm ci
-      - run: npm run pack:firefox
-      - run: npm run pack:chrome
+      - run: npm run pack:firefox -- --prod
+      - run: npm run pack:chrome -- --prod
 
       - name: Create tag + GitHub Release (release-only)
         id: rp_release

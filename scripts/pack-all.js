@@ -1,16 +1,19 @@
 const { execSync } = require('child_process');
 
+const isProd = process.argv.includes('--prod');
+const prodArgs = isProd ? ' -- --prod' : '';
+
 console.log('🚀 Building and packing for both Firefox and Chrome...\n');
 
 try {
   // Build and pack Firefox
   console.log('📦 Building Firefox extension...');
-  execSync('npm run pack:firefox', { stdio: 'inherit' });
+  execSync('npm run pack:firefox' + prodArgs, { stdio: 'inherit' });
   console.log('\n✅ Firefox extension packed successfully!\n');
 
   // Build and pack Chrome
   console.log('📦 Building Chrome extension...');
-  execSync('npm run pack:chrome', { stdio: 'inherit' });
+  execSync('npm run pack:chrome' + prodArgs, { stdio: 'inherit' });
   console.log('\n✅ Chrome extension packed successfully!\n');
 
   console.log('🎉 All extensions packed successfully!');

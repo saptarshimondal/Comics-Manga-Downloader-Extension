@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const webpack = require('webpack');
 const DIST_DIR = path.resolve(__dirname, 'dist');
 const SRC_DIR = path.resolve(__dirname, 'src');
@@ -15,6 +16,11 @@ const package = require('./package');
 
 const options = {
 	mode: "development",
+  performance: {
+    hints: false,
+    maxAssetSize: 512000,
+    maxEntrypointSize: 512000
+  },
   devtool: 'cheap-module-source-map',
 	entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
@@ -86,10 +92,25 @@ const options = {
     		to: "popup/icon"
     	}]
     }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/css",
+    		to: "css"
+    	}]
+    }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/images",
+    		to: "images"
+    	}]
+    }),
     new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "popup", "index.html"),
+      templateContent: fs.readFileSync(path.join(SRC_DIR, "popup", "index.html"), "utf8"),
       filename: "popup.html",
-      chunks: ["popup"]
+      chunks: ["popup"],
+      inject: "body",
+      scriptLoading: "blocking",
+      publicPath: "./"
     }),
     new webpack.ProvidePlugin({
       browser: 'webextension-polyfill'

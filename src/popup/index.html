@@ -4,7 +4,6 @@
 
     <link rel="stylesheet" href="./css/main.css" type="text/css">
     <link rel="stylesheet" href="./css/nouislider.min.css" type="text/css">
-    <link rel="stylesheet" href="./css/select2/select2.min.css" type="text/css">
     <style>
         html,
           body {
@@ -68,7 +67,113 @@
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 8px;
           }
-    
+
+          /* Select2-like dimension filter */
+          .dimension-filter-select2 {
+            position: relative;
+            flex: 1 1 0%;
+            width: 100%;
+            min-width: 0;
+          }
+          .dimension-filter-trigger {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            min-height: 32px;
+            padding: 4px 28px 4px 8px;
+            font-size: 12px;
+            line-height: 1.4;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          }
+          .dimension-filter-trigger:hover { border-color: #999; }
+          .dimension-filter-trigger:focus,
+          .dimension-filter-select2.open .dimension-filter-trigger {
+            border-color: #5897fb;
+            box-shadow: 0 0 0 1px #5897fb;
+          }
+          .dimension-filter-trigger::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            width: 0;
+            height: 0;
+            margin-top: -2px;
+            border: 5px solid transparent;
+            border-top-color: #666;
+            pointer-events: none;
+          }
+          .dimension-filter-select2.open .dimension-filter-trigger::after {
+            margin-top: -7px;
+            border-top-color: transparent;
+            border-bottom-color: #666;
+          }
+          .dimension-filter-placeholder {
+            color: #999;
+          }
+          .dimension-filter-choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+          }
+          .dimension-filter-choice {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            font-size: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background: #f4f4f4;
+            color: #333;
+            white-space: nowrap;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .dimension-filter-choice .remove {
+            margin-left: 4px;
+            padding: 0 2px;
+            color: #999;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            border: none;
+            background: none;
+          }
+          .dimension-filter-choice .remove:hover { color: #c00; }
+          .dimension-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            margin-top: 2px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            display: none;
+          }
+          .dimension-filter-select2.open .dimension-filter-dropdown { display: block; }
+          .dimension-filter-option {
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.1s;
+          }
+          .dimension-filter-option:hover { background: #f0f0f0; }
+          .dimension-filter-option.selected { background: #e8f4ff; color: #333; }
+          .dimension-filter-option[data-value=""] { font-weight: 500; border-bottom: 1px solid #eee; }
+
           #clearQuery,
           #open_options_button {
             cursor: pointer;
@@ -436,9 +541,15 @@
               </div>
             <div style="display: flex; align-items: center; gap: 4px; margin-top: 8px;">
               <label for="dimensionFilter" style="font-size: 12px; white-space: nowrap;">Filter by dimensions:</label>
-              <select id="dimensionFilter" title="Filter images by dimensions" multiple style="flex: 1 1 0%; width: 100%;">
-                <option value="">All dimensions</option>
-              </select>
+              <div id="dimensionFilter" class="dimension-filter-select2" title="Filter images by dimensions">
+                <div class="dimension-filter-trigger" tabindex="0">
+                  <span class="dimension-filter-placeholder">Select dimensions...</span>
+                  <span class="dimension-filter-choices"></span>
+                </div>
+                <div class="dimension-filter-dropdown">
+                  <div class="dimension-filter-option" data-value="">All dimensions</div>
+                </div>
+              </div>
             </div>
             <div>
                 <table class="grid">
@@ -482,9 +593,6 @@
         <div id="download_error_message"></div>
       </div>
     </div>
-    
-    <script src="./js/jquery.min.js"></script>
-    <script src="./js/select2/select2.min.js"></script>
 </body>
 
 </html>
