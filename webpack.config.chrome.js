@@ -98,6 +98,12 @@ const options = {
     		to: "css"
     	}]
     }),
+    new CopyWebpackPlugin({
+    	patterns: [{
+    		from: "src/popup/images",
+    		to: "images"
+    	}]
+    }),
     new HtmlWebpackPlugin({
       templateContent: fs.readFileSync(path.join(SRC_DIR, "popup", "index.html"), "utf8"),
       filename: "popup.html",
