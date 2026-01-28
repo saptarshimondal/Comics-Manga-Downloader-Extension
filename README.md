@@ -241,6 +241,26 @@ Please read the following to setup the project locally for development.
    ```
    Creates packaged extensions for both browsers in their respective directories. You can use these to distribute your extension.
 
+7. **Production Build** (minified, optimized for release):
+   
+   Build with production mode (enables minification and optimizations). Use the `--prod` flag by passing it after `--`:
+   
+   For Firefox only:
+   ```sh
+   npm run pack:firefox -- --prod
+   ```
+   
+   For Chrome only:
+   ```sh
+   npm run pack:chrome -- --prod
+   ```
+   
+   For both Firefox and Chrome:
+   ```sh
+   npm run pack:all -- --prod
+   ```
+   Creates production-ready packaged extensions in the same output locations as the regular pack commands. Use these when preparing a release.
+
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
