@@ -11,7 +11,8 @@ import DownloadView from './views/DownloadView';
 		await DownloadView.restoreDownloadState();
 		
 		const tabs = await browser.tabs.query({active: true, currentWindow: true});
-		
+		const pageUrl = tabs[0] && tabs[0].url ? tabs[0].url : '';
+
 		// Inject content script using Manifest V3 API
 		await browser.scripting.executeScript({
 			target: { tabId: tabs[0].id },
@@ -22,7 +23,7 @@ import DownloadView from './views/DownloadView';
 
 		const title = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchTitle"});
 
-		await init({images, title});
+		await init({ images, title, pageUrl });
 
 	} catch(e) {
 		console.error(e.message);

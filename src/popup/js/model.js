@@ -103,3 +103,45 @@ export const clearDownloadState = async () => {
 		console.error('Error clearing download state:', error);
 	}
 };
+
+// Per-page applied filters and image selection (URL filter, dimension filter, checked state)
+const APPLIED_FILTERS_STORAGE_KEY = 'appliedFiltersByPage';
+
+export const getAppliedFiltersForPage = async (pageUrl) => {
+	try {
+		const storage = getStorage();
+		if (!storage) return null;
+		const result = await storage.get(APPLIED_FILTERS_STORAGE_KEY);
+		const byPage = result[APPLIED_FILTERS_STORAGE_KEY] || {};
+		return byPage[pageUrl] || null;
+	} catch (error) {
+		console.error('Error getting applied filters for page:', error);
+		return null;
+	}
+};
+
+export const saveAppliedFiltersForPage = async (pageUrl, data) => {
+	try {
+		const storage = getStorage();
+		if (!storage) return;
+		const result = await storage.get(APPLIED_FILTERS_STORAGE_KEY);
+		const byPage = result[APPLIED_FILTERS_STORAGE_KEY] || {};
+		byPage[pageUrl] = data;
+		await storage.set({ [APPLIED_FILTERS_STORAGE_KEY]: byPage });
+	} catch (error) {
+		console.error('Error saving applied filters for page:', error);
+	}
+};
+
+/** Build current applied filter + image selection state for persistence */
+export const buildAppliedFiltersState = () => {
+	const query = getState('query') || '';
+	const selectedDimensionFilters = getState('selectedDimensionFilters') || [];
+	const filteredImages = getState('filteredImages') || [];
+	const imageSelection = {};
+	filteredImages.forEach((img) => {
+		const key = `${img.src}|${img.type || (img.src.startsWith('data') ? 'data' : 'url')}`;
+		imageSelection[key] = !!img.checked;
+	});
+	return { query, selectedDimensionFilters, imageSelection };
+};

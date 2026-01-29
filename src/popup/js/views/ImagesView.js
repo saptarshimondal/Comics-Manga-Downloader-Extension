@@ -119,6 +119,13 @@ class ImagesView extends View {
     });
   }
 
+  /** Set selected dimensions from outside (e.g. restore from storage). Updates UI. */
+  setSelectedDimensions(dims) {
+    this._selectedDimensions = Array.isArray(dims) ? dims.slice() : [];
+    this._syncDimensionOptionsSelection();
+    this._updateDimensionFilterDisplay();
+  }
+
   // Override render so we can update dimensions right after DOM is inserted
   render(data) {
     super.render(data);
