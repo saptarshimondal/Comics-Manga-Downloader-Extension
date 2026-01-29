@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.5.3...v1.6.0) (2026-01-29)
+
+
+### Features
+
+* persist applied filters; separate download progress per tab ([e0476a0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/e0476a058e49d86fae927546e6a9bc2a6a628e9e))
+
 ## [1.5.3](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.5.2...v1.5.3) (2026-01-27)
 
 
