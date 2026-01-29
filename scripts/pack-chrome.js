@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const distDir = path.resolve(__dirname, '../dist');
 const outputDir = path.resolve(__dirname, '../web-ext-artifacts/chrome');
@@ -19,11 +19,29 @@ if (fs.existsSync(zipFile)) {
 // Create zip file
 try {
   if (process.platform === 'win32') {
-    // Windows: Use PowerShell
-    execSync(`powershell Compress-Archive -Path "${distDir}\\*" -DestinationPath "${zipFile}" -Force`, { stdio: 'inherit' });
+    // Windows: Use PowerShell without going through a shell
+    execFileSync('powershell', [
+      '-NoProfile',
+      '-NonInteractive',
+      'Compress-Archive',
+      '-Path',
+      distDir + '\\*',
+      '-DestinationPath',
+      zipFile,
+      '-Force'
+    ], { stdio: 'inherit' });
   } else {
-    // Linux/Mac: Use zip command
-    execSync(`cd "${distDir}" && zip -r "${zipFile}" . -x '*.map'`, { stdio: 'inherit' });
+    // Linux/Mac: Use zip command without going through a shell
+    execFileSync('zip', [
+      '-r',
+      zipFile,
+      '.',
+      '-x',
+      '*.map'
+    ], {
+      stdio: 'inherit',
+      cwd: distDir
+    });
   }
   console.log(`\n✅ Chrome extension packed successfully: ${zipFile}`);
 } catch (error) {
