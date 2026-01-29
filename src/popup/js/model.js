@@ -38,15 +38,26 @@ export const initState = ({images, title}) => {
 		if (height) result.height = height;
 		return result;
 	}));
-	setState('imageDimensions', {});
+	// Populate imageDimensions from content script data so dimension filter works on restore
+	const imageDimensions = {};
+	images.forEach((img) => {
+		const w = img.width;
+		const h = img.height;
+		if (w != null && h != null && Number(w) > 0 && Number(h) > 0) {
+			const imgType = img.type || (img.src && img.src.startsWith('data') ? 'data' : 'url');
+			const key = `${img.src}|${imgType}`;
+			imageDimensions[key] = `${Number(w)}x${Number(h)}`;
+		}
+	});
+	setState('imageDimensions', imageDimensions);
 	setState('selectedDimensionFilters', []);
 
 	return true;
 
 }
 
-// Storage functions for persisting download state across popup sessions
-const DOWNLOAD_STATE_KEY = 'downloadState';
+// Storage functions for persisting download state per tab (each tab has its own download state)
+const DOWNLOAD_STATE_BY_TAB_KEY = 'downloadStateByTab';
 
 // Get the storage API (browser.storage or chrome.storage)
 const getStorage = () => {
@@ -60,46 +71,92 @@ const getStorage = () => {
 	}
 };
 
-export const saveDownloadState = async (state) => {
+export const saveDownloadState = async (tabId, state) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot save download state');
 			return;
 		}
-		console.log('Saving download state:', state);
-		await storage.set({ [DOWNLOAD_STATE_KEY]: state });
-		console.log('Download state saved successfully');
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		byTab[tabId] = state;
+		await storage.set({ [DOWNLOAD_STATE_BY_TAB_KEY]: byTab });
 	} catch (error) {
 		console.error('Error saving download state:', error);
 	}
 };
 
-export const getDownloadState = async () => {
+export const getDownloadState = async (tabId) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot get download state');
 			return null;
 		}
-		const result = await storage.get(DOWNLOAD_STATE_KEY);
-		console.log('Retrieved download state:', result[DOWNLOAD_STATE_KEY]);
-		return result[DOWNLOAD_STATE_KEY] || null;
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		return byTab[tabId] || null;
 	} catch (error) {
 		console.error('Error getting download state:', error);
 		return null;
 	}
 };
 
-export const clearDownloadState = async () => {
+export const clearDownloadState = async (tabId) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot clear download state');
 			return;
 		}
-		await storage.remove(DOWNLOAD_STATE_KEY);
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		delete byTab[tabId];
+		await storage.set({ [DOWNLOAD_STATE_BY_TAB_KEY]: byTab });
 	} catch (error) {
 		console.error('Error clearing download state:', error);
 	}
+};
+
+// Per-page applied filters and image selection (URL filter, dimension filter, checked state)
+const APPLIED_FILTERS_STORAGE_KEY = 'appliedFiltersByPage';
+
+export const getAppliedFiltersForPage = async (pageUrl) => {
+	try {
+		const storage = getStorage();
+		if (!storage) return null;
+		const result = await storage.get(APPLIED_FILTERS_STORAGE_KEY);
+		const byPage = result[APPLIED_FILTERS_STORAGE_KEY] || {};
+		return byPage[pageUrl] || null;
+	} catch (error) {
+		console.error('Error getting applied filters for page:', error);
+		return null;
+	}
+};
+
+export const saveAppliedFiltersForPage = async (pageUrl, data) => {
+	try {
+		const storage = getStorage();
+		if (!storage) return;
+		const result = await storage.get(APPLIED_FILTERS_STORAGE_KEY);
+		const byPage = result[APPLIED_FILTERS_STORAGE_KEY] || {};
+		byPage[pageUrl] = data;
+		await storage.set({ [APPLIED_FILTERS_STORAGE_KEY]: byPage });
+	} catch (error) {
+		console.error('Error saving applied filters for page:', error);
+	}
+};
+
+/** Build current applied filter + image selection state for persistence */
+export const buildAppliedFiltersState = () => {
+	const query = getState('query') || '';
+	const selectedDimensionFilters = getState('selectedDimensionFilters') || [];
+	const filteredImages = getState('filteredImages') || [];
+	const imageSelection = {};
+	filteredImages.forEach((img) => {
+		const key = `${img.src}|${img.type || (img.src.startsWith('data') ? 'data' : 'url')}`;
+		imageSelection[key] = !!img.checked;
+	});
+	return { query, selectedDimensionFilters, imageSelection };
 };

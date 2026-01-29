@@ -1,6 +1,8 @@
 import View from './View';
 import { getState, saveDownloadState, getDownloadState, clearDownloadState } from '../model';
 
+const getCurrentTabId = () => getState('currentTabId');
+
 class DownloadView extends View {
 
 	constructor(selector){
@@ -11,49 +13,61 @@ class DownloadView extends View {
 		this._progressFill = document.querySelector('#download_progress_fill')
 		this._progressText = document.querySelector('#download_progress_text')
 		this._errorMessage = document.querySelector('#download_error_message')
+		this._overlayClose = document.querySelector('#download_overlay_close')
 		this._isDownloading = false
 		this._progressListener = null
 		this._closeTimeout = null
 		this._safetyTimeout = null
 		this._downloadComplete = false
 		this._restorePromise = null
-		
+
+		if (this._overlayClose) {
+			this._overlayClose.addEventListener('click', () => this._onOverlayCloseClick());
+		}
+
 		// Always set up progress listener immediately, even if not downloading
-		// This ensures we catch progress messages if download is active
 		this._setupProgressListener();
-		
-		// Save state when popup is about to close
+
+		// Save state when popup is about to close (per-tab) – only if download still in progress (not completed/errored)
 		window.addEventListener('beforeunload', () => {
-			if (this._isDownloading) {
-				console.log('DownloadView: Popup closing, saving final state...');
-				// Save state synchronously if possible, or use sendBeacon
-				saveDownloadState({
-					isDownloading: true,
-					progress: this._progressFill ? parseInt(this._progressFill.style.width) || 0 : 0,
-					progressText: this._progressText ? this._progressText.textContent || '' : '',
-					downloadComplete: this._downloadComplete
-				}).catch(err => console.error('Error saving state on close:', err));
+			if (this._isDownloading && !this._downloadComplete) {
+				const tabId = getCurrentTabId();
+				if (tabId != null) {
+					saveDownloadState(tabId, {
+						isDownloading: true,
+						progress: this._progressFill ? parseInt(this._progressFill.style.width) || 0 : 0,
+						progressText: this._progressText ? this._progressText.textContent || '' : '',
+						downloadComplete: false
+					}).catch(err => console.error('Error saving state on close:', err));
+				}
 			}
 		});
 	}
+
+	_showOverlayCloseButton() {
+		if (this._overlay) this._overlay.classList.add('show-close');
+	}
+
+	_hideOverlayCloseButton() {
+		if (this._overlay) this._overlay.classList.remove('show-close');
+	}
+
+	_onOverlayCloseClick() {
+		this.hideDownloadingOverlay();
+		window.close();
+	}
 	
-	// Restore download state if popup was closed during download
-	async _restoreDownloadState() {
+	// Restore download state only if this tab had an active download
+	async _restoreDownloadState(tabId) {
 		try {
-			console.log('DownloadView: Checking for saved download state...');
-			const savedState = await getDownloadState();
-			console.log('DownloadView: Retrieved state:', savedState);
+			if (tabId == null) return false;
+			const savedState = await getDownloadState(tabId);
 			
 			if (savedState && savedState.isDownloading) {
-				// Treat inconsistent state as stale (e.g. downloadComplete true but progress < 100)
-				// This can occur when the popup closed during the final progress updates
 				if (savedState.downloadComplete && (savedState.progress ?? 0) < 100) {
-					console.log('DownloadView: Stale/inconsistent state detected, clearing:', savedState);
-					await clearDownloadState();
+					await clearDownloadState(tabId);
 					return false;
 				}
-
-				console.log('DownloadView: Restoring download state:', savedState);
 
 				// Ensure DOM elements exist - retry if not ready
 				let retries = 0;
@@ -86,39 +100,31 @@ class DownloadView extends View {
 				this._errorMessage.classList.remove('show');
 				this._errorMessage.textContent = '';
 				
-				// Restore progress
+				// Restore progress – use "Download complete!" when restored state was at 100%
 				const progress = savedState.progress || 0;
-				const progressText = savedState.progressText || 'Download in progress...';
+				const isCompleted = progress >= 100 || (savedState.downloadComplete && progress >= 100);
+				const progressText = isCompleted
+					? 'Download complete!'
+					: (savedState.progressText || 'Download in progress...');
 				this._updateProgress(progress, progressText);
-				console.log('DownloadView: Progress restored to', progress, '% -', progressText);
-				
-				// Verify overlay is visible
-				if (!this._overlay.classList.contains('show')) {
-					console.warn('DownloadView: Overlay class not set, forcing show...');
-					this._overlay.classList.add('show');
-				}
-				console.log('DownloadView: Overlay visible:', this._overlay.classList.contains('show'));
-				
+
 				// Reattach progress listener
 				this._setupProgressListener();
-				console.log('DownloadView: Progress listener reattached');
-				
-				// If download was already complete, handle it
-				if (savedState.downloadComplete && savedState.progress >= 100) {
+
+				// If restored state was completed (progress >= 100), always show close button so user can dismiss overlay
+				if (isCompleted) {
 					this._downloadComplete = true;
+					this._showOverlayCloseButton();
 					this._closeTimeout = setTimeout(() => {
 						if (this._downloadComplete) {
-							clearDownloadState();
+							clearDownloadState(tabId);
 							window.close();
 						}
 					}, 500);
 				}
-				
 				return true;
-			} else {
-				console.log('DownloadView: No active download state found');
-				return false;
 			}
+			return false;
 		} catch (error) {
 			console.error('Error restoring download state:', error);
 			return false;
@@ -134,83 +140,66 @@ class DownloadView extends View {
 		
 		// Set up progress message listener
 		this._progressListener = (message, sender, sendResponse) => {
-			console.log('DownloadView: Received message:', message, 'from:', sender);
-			// Handle progress messages
-			if (message && message.type === 'downloadProgress') {
-				console.log('DownloadView: Progress update received:', message.progress, message.text);
-				
-				// If we're not in downloading state but receive a progress message, restore state
-				if (!this._isDownloading) {
-					console.log('DownloadView: Received progress but not in downloading state, restoring...');
-					
-					// Ensure DOM elements exist
-					if (!this._overlay) this._overlay = document.querySelector('#downloading_overlay');
-					if (!this._progressFill) this._progressFill = document.querySelector('#download_progress_fill');
-					if (!this._progressText) this._progressText = document.querySelector('#download_progress_text');
-					if (!this._errorMessage) this._errorMessage = document.querySelector('#download_error_message');
-					if (!this._parent) this._parent = document.querySelector('#download');
-					
-					if (this._overlay && this._parent) {
-						this._isDownloading = true;
-						this._downloadComplete = false;
-						this._parent.disabled = true;
-						this._parent.value = 'Downloading...';
-						this._overlay.classList.add('show');
-						this._overlay.style.display = 'flex';
-						this._errorMessage.classList.remove('show');
-						this._errorMessage.textContent = '';
-						console.log('DownloadView: Overlay restored from progress message');
-					} else {
-						console.error('DownloadView: Cannot restore - DOM elements missing');
-					}
-				}
-				
-				this.updateProgress(message.progress, message.text)
-				
-				// If we reached 100%, mark as complete and schedule popup close
-				if (message.progress >= 100) {
-					console.log('DownloadView: Download complete, waiting for file to save before closing popup');
-					this._downloadComplete = true
-					// Save state
-					saveDownloadState({
-						isDownloading: true,
-						progress: 100,
-						progressText: message.text || 'Download complete!',
-						downloadComplete: true
-					});
-					// Clear any safety timeout since we got completion
-					if (this._safetyTimeout) {
-						clearTimeout(this._safetyTimeout)
-						this._safetyTimeout = null
-					}
-					// Wait longer before closing to ensure the download file is actually saved
-					// The content script already waited, but we wait a bit more to be safe
-					// This ensures the file is fully saved to disk before closing
-					this._closeTimeout = setTimeout(() => {
-						if (this._downloadComplete) {
-							console.log('DownloadView: Closing popup now - download should be complete');
-							clearDownloadState(); // Clear state before closing
-							window.close()
-						}
-					}, 2500) // Wait 2.5 seconds after 100% to ensure download file is saved
-				}
-				
-				if (message.error) {
-					// Error occurred during processing
-					console.error('DownloadView: Error in progress message:', message.error);
-					this.showError(message.error)
-					this._downloadComplete = false
-					if (this._closeTimeout) {
-						clearTimeout(this._closeTimeout)
-						this._closeTimeout = null
-					}
-					if (this._safetyTimeout) {
-						clearTimeout(this._safetyTimeout)
-						this._safetyTimeout = null
-					}
+			if (!message || message.type !== 'downloadProgress') return false;
+			const senderTabId = sender && sender.tab ? sender.tab.id : null;
+			if (senderTabId == null) return false;
+
+			// Always clear that tab's state on completion or error so reopening that tab's popup won't show stale overlay
+			if (message.progress >= 100 || message.error) {
+				clearDownloadState(senderTabId);
+			}
+
+			const currentTabId = getCurrentTabId();
+			if (senderTabId !== currentTabId) return false;
+
+			// From here: message is for current tab – update UI
+			if (!this._isDownloading) {
+				if (!this._overlay) this._overlay = document.querySelector('#downloading_overlay');
+				if (!this._progressFill) this._progressFill = document.querySelector('#download_progress_fill');
+				if (!this._progressText) this._progressText = document.querySelector('#download_progress_text');
+				if (!this._errorMessage) this._errorMessage = document.querySelector('#download_error_message');
+				if (!this._parent) this._parent = document.querySelector('#download');
+				if (this._overlay && this._parent) {
+					this._isDownloading = true;
+					this._downloadComplete = false;
+					this._parent.disabled = true;
+					this._parent.value = 'Downloading...';
+					this._overlay.classList.add('show');
+					this._overlay.style.display = 'flex';
+					this._errorMessage.classList.remove('show');
+					this._errorMessage.textContent = '';
 				}
 			}
-			// Return true to indicate we might send a response asynchronously
+
+			this.updateProgress(message.progress, message.text);
+
+			if (message.progress >= 100) {
+				this._downloadComplete = true;
+				this._showOverlayCloseButton();
+				if (this._safetyTimeout) {
+					clearTimeout(this._safetyTimeout);
+					this._safetyTimeout = null;
+				}
+				this._closeTimeout = setTimeout(() => {
+					if (this._downloadComplete) {
+						window.close();
+					}
+				}, 2500);
+			}
+
+			if (message.error) {
+				this._showOverlayCloseButton();
+				this.showError(message.error);
+				this._downloadComplete = false;
+				if (this._closeTimeout) {
+					clearTimeout(this._closeTimeout);
+					this._closeTimeout = null;
+				}
+				if (this._safetyTimeout) {
+					clearTimeout(this._safetyTimeout);
+					this._safetyTimeout = null;
+				}
+			}
 			return false;
 		};
 		browser.runtime.onMessage.addListener(this._progressListener)
@@ -326,56 +315,40 @@ class DownloadView extends View {
 		super.render(data);
 	}
 	
-	// Method to be called after initialization to restore download state
-	async restoreDownloadState() {
-		// Prevent multiple simultaneous restorations
+	// Restore download state only for the given tab (called when popup opens)
+	async restoreDownloadState(tabId) {
 		if (this._restorePromise) {
 			return this._restorePromise;
 		}
-		
-		console.log('DownloadView: restoreDownloadState() called');
-		this._restorePromise = this._restoreDownloadState();
+		this._restorePromise = this._restoreDownloadState(tabId);
 		const result = await this._restorePromise;
 		this._restorePromise = null;
-		
-		// Also set up a delayed check to ensure restoration happened
-		// This handles cases where DOM might not be ready immediately
+		const currentTabId = getCurrentTabId();
 		setTimeout(async () => {
-			if (!this._isDownloading) {
-				console.log('DownloadView: Delayed check - current state:', this._isDownloading);
-				const savedState = await getDownloadState();
-				console.log('DownloadView: Delayed check - saved state:', savedState);
+			if (!this._isDownloading && currentTabId != null) {
+				const savedState = await getDownloadState(currentTabId);
 				if (savedState && savedState.isDownloading) {
-					console.log('DownloadView: Delayed check found active download, restoring now...');
-					await this._restoreDownloadState();
+					await this._restoreDownloadState(currentTabId);
 				}
 			}
 		}, 100);
-		
-		// Also check again after a longer delay in case messages arrive late
 		setTimeout(async () => {
-			if (!this._isDownloading) {
-				const savedState = await getDownloadState();
+			if (!this._isDownloading && currentTabId != null) {
+				const savedState = await getDownloadState(currentTabId);
 				if (savedState && savedState.isDownloading) {
-					console.log('DownloadView: Second delayed check found active download, restoring...');
-					await this._restoreDownloadState();
+					await this._restoreDownloadState(currentTabId);
 				}
 			}
 		}, 500);
-		
 		return result;
 	}
-	
-	// Force check and restore state - useful for debugging
+
 	async checkAndRestoreState() {
-		console.log('DownloadView: Force checking download state...');
-		const savedState = await getDownloadState();
-		console.log('DownloadView: Current saved state:', savedState);
-		console.log('DownloadView: Current _isDownloading:', this._isDownloading);
-		
+		const tabId = getCurrentTabId();
+		if (tabId == null) return;
+		const savedState = await getDownloadState(tabId);
 		if (savedState && savedState.isDownloading && !this._isDownloading) {
-			console.log('DownloadView: State mismatch detected! Restoring...');
-			await this._restoreDownloadState();
+			await this._restoreDownloadState(tabId);
 		}
 	}
 
@@ -385,17 +358,19 @@ class DownloadView extends View {
 		this._parent.disabled = true
 		this._parent.value = 'Downloading...'
 		this._overlay.classList.add('show')
+		this._hideOverlayCloseButton()
 		this._errorMessage.classList.remove('show')
 		this._errorMessage.textContent = ''
 		this._updateProgress(0, 'Preparing download...')
-		
-		// Save initial download state
-		saveDownloadState({
-			isDownloading: true,
-			progress: 0,
-			progressText: 'Preparing download...',
-			downloadComplete: false
-		});
+		const tabId = getCurrentTabId();
+		if (tabId != null) {
+			saveDownloadState(tabId, {
+				isDownloading: true,
+				progress: 0,
+				progressText: 'Preparing download...',
+				downloadComplete: false
+			});
+		}
 		
 		// Clear any existing close timeout
 		if (this._closeTimeout) {
@@ -423,10 +398,10 @@ class DownloadView extends View {
 		this._parent.disabled = false
 		this._parent.value = 'Download'
 		this._overlay.classList.remove('show')
+		this._hideOverlayCloseButton()
 		this._updateProgress(0, '')
-		
-		// Clear stored download state
-		clearDownloadState();
+		const tabId = getCurrentTabId();
+		if (tabId != null) clearDownloadState(tabId);
 		
 		// Clear close timeout
 		if (this._closeTimeout) {
@@ -452,9 +427,8 @@ class DownloadView extends View {
 		this._errorMessage.classList.add('show')
 		this._progressText.textContent = 'Download failed'
 		this._downloadComplete = false
-		
-		// Clear stored download state on error
-		clearDownloadState();
+		const tabId = getCurrentTabId();
+		if (tabId != null) clearDownloadState(tabId);
 		
 		// Clear close timeout on error
 		if (this._closeTimeout) {
@@ -484,37 +458,25 @@ class DownloadView extends View {
 	}
 
 	updateProgress(percentage, text) {
-		this._updateProgress(percentage, text)
-		
-		// Always update stored download state if downloading
-		// This ensures state is saved even if _isDownloading flag gets out of sync
-		// Save state on EVERY progress update to ensure it's always current
+		this._updateProgress(percentage, text);
+		// Never persist state at 100% or when complete – we clear that tab's state on completion
+		if (percentage >= 100) return;
+		const tabId = getCurrentTabId();
+		if (tabId == null) return;
 		if (this._isDownloading) {
-			const stateToSave = {
+			saveDownloadState(tabId, {
 				isDownloading: true,
 				progress: percentage,
 				progressText: text || '',
-				downloadComplete: this._downloadComplete
-			};
-			console.log('DownloadView: Saving progress state:', stateToSave);
-			// Use synchronous-like approach - don't await, just fire and forget
-			saveDownloadState(stateToSave).catch(err => {
-				console.error('DownloadView: Error saving progress state:', err);
-			});
-		} else {
-			// Even if not marked as downloading, if we have progress, save it
-			// This handles edge cases where state might be out of sync
-			if (percentage > 0) {
-				console.log('DownloadView: Saving progress state even though not marked as downloading');
-				saveDownloadState({
-					isDownloading: true,
-					progress: percentage,
-					progressText: text || '',
-					downloadComplete: false
-				}).catch(err => {
-					console.error('DownloadView: Error saving progress state:', err);
-				});
-			}
+				downloadComplete: false
+			}).catch(err => console.error('DownloadView: Error saving progress state:', err));
+		} else if (percentage > 0) {
+			saveDownloadState(tabId, {
+				isDownloading: true,
+				progress: percentage,
+				progressText: text || '',
+				downloadComplete: false
+			}).catch(err => console.error('DownloadView: Error saving progress state:', err));
 		}
 	}
 
@@ -543,8 +505,8 @@ class DownloadView extends View {
 					// For jspdf downloads, don't close immediately - wait for 100% progress message
 					// The progress listener will handle closing when it receives 100%
 					if (this._downloadType.value !== 'jspdf') {
-						// For browser downloads, clear state and close after a short delay
-						clearDownloadState();
+						const tabId = getCurrentTabId();
+						if (tabId != null) clearDownloadState(tabId);
 						setTimeout(() => {
 							window.close()
 						}, 1000)

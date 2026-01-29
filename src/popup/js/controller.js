@@ -2,8 +2,16 @@ import ImagesView from './views/ImagesView';
 import DownloadView from './views/DownloadView';
 import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
-import { initState, getState, setState } from './model';
+import { initState, getState, setState, getAppliedFiltersForPage, saveAppliedFiltersForPage, buildAppliedFiltersState } from './model';
 import { dump } from './helpers';
+
+/** Persist current filters and image selection for the current page */
+const persistAppliedFilters = async () => {
+	const pageUrl = getState('currentPageUrl');
+	if (!pageUrl) return;
+	const data = buildAppliedFiltersState();
+	await saveAppliedFiltersForPage(pageUrl, data);
+};
 
 const imagesController = async function () {
 
@@ -33,6 +41,7 @@ const imagesSelectionController = function (id, checkVal) {
 	images[id].checked = checkVal;	
 
 	setState('filteredImages', images);
+	persistAppliedFilters();
 	SelectAllCheckBoxView.render(images);
 	DownloadView.render(images);
 };
@@ -58,6 +67,7 @@ export const selectAllController = function (checkVal) {
 
 	setState('filteredImages', images);
 
+	persistAppliedFilters();
 	SelectAllCheckBoxView.render(images);
 	ImagesView.render(images);
 	DownloadView.render(images);
@@ -187,6 +197,7 @@ const applyFilters = function () {
 export const searchController = function (e) {
 	setState('query', e.target.value);
 	applyFilters();
+	persistAppliedFilters();
 }
 
 export const clearSearchController = function (){
@@ -196,6 +207,7 @@ export const clearSearchController = function (){
 export const dimensionFilterController = function (selectedDimensions) {
 	setState('selectedDimensionFilters', selectedDimensions);
 	applyFilters();
+	persistAppliedFilters();
 }
 
 
@@ -211,13 +223,39 @@ export const downloadSingleImageController = async function (url) {
 }
 
 
-export const init = async function ({images, title}) {
-	initState({images, title})
-	
+export const init = async function ({ images, title, pageUrl }) {
+	setState('currentPageUrl', pageUrl || '');
+
+	initState({ images, title });
+
+	const saved = pageUrl ? await getAppliedFiltersForPage(pageUrl) : null;
+	if (saved) {
+		setState('query', saved.query || '');
+		setState('selectedDimensionFilters', Array.isArray(saved.selectedDimensionFilters) ? saved.selectedDimensionFilters : []);
+	}
+
+	applyFilters();
+
+	if (saved && saved.imageSelection && typeof saved.imageSelection === 'object') {
+		let filteredImages = getState('filteredImages') || [];
+		filteredImages = filteredImages.map((img) => {
+			const key = `${img.src}|${img.type || (img.src.startsWith('data') ? 'data' : 'url')}`;
+			if (Object.prototype.hasOwnProperty.call(saved.imageSelection, key)) {
+				return { ...img, checked: !!saved.imageSelection[key] };
+			}
+			return img;
+		});
+		setState('filteredImages', filteredImages);
+	}
+
 	// Restore download state first, before rendering
 	await DownloadView.restoreDownloadState();
-	
-	// ImagesView.addHandlerRender(imagesController);
+
+	// Sync URL filter input and dimension filter UI from state
+	const queryInput = document.querySelector('#query');
+	if (queryInput) queryInput.value = getState('query') || '';
+	ImagesView.setSelectedDimensions(getState('selectedDimensionFilters') || []);
+
 	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);
 	ImagesView.addHandlerDownloadSingleImage(downloadSingleImageController);
@@ -226,5 +264,4 @@ export const init = async function ({images, title}) {
 	DownloadView.addHandlerDownloader(downloaderController);
 	SearchView.addHandlerSearch(searchController);
 	SearchView.addHandlerClearSearch(clearSearchController);
-
 };
