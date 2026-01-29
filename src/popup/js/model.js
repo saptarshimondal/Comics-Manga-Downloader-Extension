@@ -38,7 +38,18 @@ export const initState = ({images, title}) => {
 		if (height) result.height = height;
 		return result;
 	}));
-	setState('imageDimensions', {});
+	// Populate imageDimensions from content script data so dimension filter works on restore
+	const imageDimensions = {};
+	images.forEach((img) => {
+		const w = img.width;
+		const h = img.height;
+		if (w != null && h != null && Number(w) > 0 && Number(h) > 0) {
+			const imgType = img.type || (img.src && img.src.startsWith('data') ? 'data' : 'url');
+			const key = `${img.src}|${imgType}`;
+			imageDimensions[key] = `${Number(w)}x${Number(h)}`;
+		}
+	});
+	setState('imageDimensions', imageDimensions);
 	setState('selectedDimensionFilters', []);
 
 	return true;
