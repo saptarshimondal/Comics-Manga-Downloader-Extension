@@ -524,6 +524,24 @@
           #download_error_message.show {
             display: block;
           }
+
+          #download_overlay_close {
+            display: none;
+            margin-top: 16px;
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            background: var(--neutral-lightest);
+            color: var(--neutral);
+          }
+          #download_overlay_close:hover {
+            background: var(--neutral-lighter);
+          }
+          #downloading_overlay.show-close #download_overlay_close {
+            display: inline-block;
+          }
     </style>
 </head>
 
@@ -591,6 +609,7 @@
         </div>
         <div id="download_progress_text">Preparing download...</div>
         <div id="download_error_message"></div>
+        <button type="button" id="download_overlay_close" aria-label="Close">Close</button>
       </div>
     </div>
 </body>

@@ -56,8 +56,8 @@ export const initState = ({images, title}) => {
 
 }
 
-// Storage functions for persisting download state across popup sessions
-const DOWNLOAD_STATE_KEY = 'downloadState';
+// Storage functions for persisting download state per tab (each tab has its own download state)
+const DOWNLOAD_STATE_BY_TAB_KEY = 'downloadStateByTab';
 
 // Get the storage API (browser.storage or chrome.storage)
 const getStorage = () => {
@@ -71,45 +71,49 @@ const getStorage = () => {
 	}
 };
 
-export const saveDownloadState = async (state) => {
+export const saveDownloadState = async (tabId, state) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot save download state');
 			return;
 		}
-		console.log('Saving download state:', state);
-		await storage.set({ [DOWNLOAD_STATE_KEY]: state });
-		console.log('Download state saved successfully');
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		byTab[tabId] = state;
+		await storage.set({ [DOWNLOAD_STATE_BY_TAB_KEY]: byTab });
 	} catch (error) {
 		console.error('Error saving download state:', error);
 	}
 };
 
-export const getDownloadState = async () => {
+export const getDownloadState = async (tabId) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot get download state');
 			return null;
 		}
-		const result = await storage.get(DOWNLOAD_STATE_KEY);
-		console.log('Retrieved download state:', result[DOWNLOAD_STATE_KEY]);
-		return result[DOWNLOAD_STATE_KEY] || null;
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		return byTab[tabId] || null;
 	} catch (error) {
 		console.error('Error getting download state:', error);
 		return null;
 	}
 };
 
-export const clearDownloadState = async () => {
+export const clearDownloadState = async (tabId) => {
 	try {
 		const storage = getStorage();
 		if (!storage) {
 			console.warn('Storage not available, cannot clear download state');
 			return;
 		}
-		await storage.remove(DOWNLOAD_STATE_KEY);
+		const result = await storage.get(DOWNLOAD_STATE_BY_TAB_KEY);
+		const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+		delete byTab[tabId];
+		await storage.set({ [DOWNLOAD_STATE_BY_TAB_KEY]: byTab });
 	} catch (error) {
 		console.error('Error clearing download state:', error);
 	}

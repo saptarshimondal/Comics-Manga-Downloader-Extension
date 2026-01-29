@@ -1,31 +1,29 @@
-import {init} from './controller';
-import {dump} from './helpers';
+import { init } from './controller';
+import { setState } from './model';
 import DownloadView from './views/DownloadView';
-// import contentScript from '../../content/index.js'; 
 
 (async function () {
 	try {
-		// Immediately check for active download state when popup opens
-		// This happens before any other initialization
-		console.log('Popup: Starting initialization, checking for active download...');
-		await DownloadView.restoreDownloadState();
-		
-		const tabs = await browser.tabs.query({active: true, currentWindow: true});
-		const pageUrl = tabs[0] && tabs[0].url ? tabs[0].url : '';
+		const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+		if (!tabs.length) return;
+		const tabId = tabs[0].id;
+		const pageUrl = tabs[0].url || '';
+		// Set current tab so download state and progress are scoped to this tab only
+		setState('currentTabId', tabId);
+		// Restore download overlay only if this tab had an active download
+		await DownloadView.restoreDownloadState(tabId);
 
 		// Inject content script using Manifest V3 API
 		await browser.scripting.executeScript({
 			target: { tabId: tabs[0].id },
 			files: ['./content.bundle.js']
 		});
-	    
-		const images = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchImages"});
 
-		const title = await browser.tabs.sendMessage(tabs[0].id, {"method": "fetchTitle"});
+		const images = await browser.tabs.sendMessage(tabs[0].id, { method: 'fetchImages' });
+		const title = await browser.tabs.sendMessage(tabs[0].id, { method: 'fetchTitle' });
 
 		await init({ images, title, pageUrl });
-
-	} catch(e) {
+	} catch (e) {
 		console.error(e.message);
 	}
 })();

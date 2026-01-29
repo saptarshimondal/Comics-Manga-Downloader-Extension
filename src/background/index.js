@@ -157,18 +157,28 @@ const fetchImageInBackground = async (srcUrl) => {
   }
 };
 
+const DOWNLOAD_STATE_BY_TAB_KEY = 'downloadStateByTab';
+
+// Clear a tab's download state in storage (so reopening that tab's popup won't show stale overlay)
+const clearDownloadStateForTab = (tabId) => {
+  if (tabId == null) return;
+  browser.storage.local.get(DOWNLOAD_STATE_BY_TAB_KEY).then((result) => {
+    const byTab = result[DOWNLOAD_STATE_BY_TAB_KEY] || {};
+    delete byTab[tabId];
+    return browser.storage.local.set({ [DOWNLOAD_STATE_BY_TAB_KEY]: byTab });
+  }).catch(() => {});
+};
+
 // Handle individual image fetch requests (for CORS bypass)
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Forward progress messages from content script to popup
   if (message.type === 'downloadProgress') {
-    console.log('Background script: Received progress message from content script:', message.progress, message.text);
-    // When an error occurred, clear download state so the UI doesn't get stuck on "Downloading PDF"
-    // This is important when the popup is closed at error time - otherwise next open restores stale state
-    if (message.error) {
-      browser.storage.local.remove('downloadState').catch(() => {});
+    const senderTabId = sender && sender.tab ? sender.tab.id : null;
+    // When download completed or error, clear that tab's state so reopening that tab's popup won't show overlay
+    if (senderTabId != null && (message.progress >= 100 || message.error)) {
+      clearDownloadStateForTab(senderTabId);
     }
     // Explicitly forward to popup by sending a new message
-    // This ensures the popup receives it even if the original message doesn't reach it
     browser.runtime.sendMessage({
       type: 'downloadProgress',
       progress: message.progress,
@@ -177,7 +187,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).catch(err => {
       console.warn('Background script: Could not forward progress message (popup might be closed):', err);
     });
-    // Return false to allow other listeners to also receive the original message
     return false;
   }
   
