@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.0...v1.7.1) (2026-01-30)
+
+
+### Bug Fixes
+
+* **download:** prevent overlay from reverting to PDF label during CBZ/ZIP download ([e2862b0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/e2862b0ca8594c82c2d4a6fd16b067a32bfaff5b))
+
 ## [1.7.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.6.0...v1.7.0) (2026-01-30)
 
 
