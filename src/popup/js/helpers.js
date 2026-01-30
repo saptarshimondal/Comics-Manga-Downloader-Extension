@@ -137,6 +137,17 @@ export const sanitizeFileName = (fileName) => {
     return sanitized;
 };
 
+/**
+ * Overlay title text for the active download format (used when showing/restoring overlay).
+ * Ensures label reflects actual download type (PDF/CBZ/ZIP) when popup is reopened mid-download.
+ * @param {string} format - 'pdf' | 'cbz' | 'zip'
+ * @returns {string} e.g. "Downloading PDF...", "Downloading CBZ...", "Downloading ZIP..."
+ */
+export const getOverlayTitleForDownloadFormat = (format) => {
+    const f = (format && ['pdf', 'cbz', 'zip'].includes(format)) ? format : 'pdf';
+    return f === 'pdf' ? 'Downloading PDF...' : `Downloading ${f.toUpperCase()}...`;
+};
+
 export const getBase64ImageMime = (data) => {
     try {
         if (!data || typeof data !== 'string') {

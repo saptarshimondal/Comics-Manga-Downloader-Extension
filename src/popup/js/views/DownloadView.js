@@ -1,6 +1,6 @@
 import View from './View';
 import { getState, saveDownloadState, getDownloadState, clearDownloadState } from '../model';
-import { sanitizeFileName } from '../helpers';
+import { sanitizeFileName, getOverlayTitleForDownloadFormat } from '../helpers';
 
 const getCurrentTabId = () => getState('currentTabId');
 
@@ -25,6 +25,8 @@ class DownloadView extends View {
 		this._safetyTimeout = null
 		this._downloadComplete = false
 		this._restorePromise = null
+		/** @type {string|null} Active download format (pdf/cbz/zip) for the current job; used when restoring overlay so label stays correct. */
+		this._activeDownloadFormat = null
 
 		if (this._overlayClose) {
 			this._overlayClose.addEventListener('click', () => this._onOverlayCloseClick());
@@ -49,7 +51,8 @@ class DownloadView extends View {
 						isDownloading: true,
 						progress: this._progressFill ? parseInt(this._progressFill.style.width) || 0 : 0,
 						progressText: this._progressText ? this._progressText.textContent || '' : '',
-						downloadComplete: false
+						downloadComplete: false,
+						downloadFormat: this._activeDownloadFormat || 'pdf'
 					}).catch(err => console.error('Error saving state on close:', err));
 				}
 			}
@@ -105,7 +108,7 @@ class DownloadView extends View {
 
 				// Ensure DOM elements exist - retry if not ready
 				let retries = 0;
-				while ((!this._overlay || !this._progressFill || !this._progressText || !this._parent) && retries < 5) {
+				while ((!this._overlay || !this._progressFill || !this._progressText || !this._parent || !this._overlayTitle || !this._downloadFormat) && retries < 5) {
 					console.log(`DownloadView: DOM elements not ready, retrying... (${retries + 1}/5)`);
 					await new Promise(resolve => setTimeout(resolve, 100));
 					// Re-query elements
@@ -114,12 +117,26 @@ class DownloadView extends View {
 					this._progressText = document.querySelector('#download_progress_text');
 					this._errorMessage = document.querySelector('#download_error_message');
 					this._parent = document.querySelector('#download');
+					this._overlayTitle = document.querySelector('#download_overlay_title');
+					this._downloadFormat = document.querySelector('#downloadFormat');
 					retries++;
 				}
 				
 				if (!this._overlay || !this._progressFill || !this._progressText || !this._parent) {
 					console.error('DownloadView: DOM elements not found after retries, cannot restore state');
 					return false;
+				}
+				
+				// Restore active download format so overlay label and dropdown match the actual download type
+				const savedFormat = (savedState.downloadFormat && ['pdf', 'cbz', 'zip'].includes(savedState.downloadFormat)) ? savedState.downloadFormat : 'pdf';
+				this._activeDownloadFormat = savedFormat;
+				if (this._overlayTitle) {
+					this._overlayTitle.textContent = getOverlayTitleForDownloadFormat(savedFormat);
+				}
+				if (this._downloadFormat) {
+					this._downloadFormat.value = savedFormat;
+					this._downloadFormat.disabled = true; // Lock type while download in progress
+					this._applyFormatUi();
 				}
 				
 				// Restore the downloading overlay
@@ -336,10 +353,12 @@ class DownloadView extends View {
 		this._errorMessage.classList.remove('show')
 		this._errorMessage.textContent = ''
 		const format = this._getDownloadFormat();
-		const formatLabel = format.toUpperCase();
+		this._activeDownloadFormat = format;
 		if (this._overlayTitle) {
-			this._overlayTitle.textContent = format === 'pdf' ? 'Downloading PDF...' : `Downloading ${formatLabel}...`;
+			this._overlayTitle.textContent = getOverlayTitleForDownloadFormat(format);
 		}
+		// Lock "Download as" dropdown during download so type stays consistent
+		if (this._downloadFormat) this._downloadFormat.disabled = true;
 		this._updateProgress(0, 'Preparing download...')
 		const tabId = getCurrentTabId();
 		if (tabId != null) {
@@ -347,7 +366,8 @@ class DownloadView extends View {
 				isDownloading: true,
 				progress: 0,
 				progressText: 'Preparing download...',
-				downloadComplete: false
+				downloadComplete: false,
+				downloadFormat: format
 			});
 		}
 		
@@ -374,8 +394,10 @@ class DownloadView extends View {
 	hideDownloadingOverlay() {
 		this._isDownloading = false
 		this._downloadComplete = false
+		this._activeDownloadFormat = null
 		this._parent.disabled = false
 		this._parent.value = 'Download'
+		if (this._downloadFormat) this._downloadFormat.disabled = false
 		this._overlay.classList.remove('show')
 		this._hideOverlayCloseButton()
 		this._updateProgress(0, '')
@@ -421,11 +443,13 @@ class DownloadView extends View {
 			this._safetyTimeout = null
 		}
 		
-		// Re-enable download button after error
+		// Re-enable download button and "Download as" dropdown after error
 		setTimeout(() => {
 			this._isDownloading = false
+			this._activeDownloadFormat = null
 			this._parent.disabled = false
 			this._parent.value = 'Download'
+			if (this._downloadFormat) this._downloadFormat.disabled = false
 		}, 3000)
 	}
 
@@ -442,19 +466,22 @@ class DownloadView extends View {
 		if (percentage >= 100) return;
 		const tabId = getCurrentTabId();
 		if (tabId == null) return;
+		const formatToSave = this._activeDownloadFormat || 'pdf';
 		if (this._isDownloading) {
 			saveDownloadState(tabId, {
 				isDownloading: true,
 				progress: percentage,
 				progressText: text || '',
-				downloadComplete: false
+				downloadComplete: false,
+				downloadFormat: formatToSave
 			}).catch(err => console.error('DownloadView: Error saving progress state:', err));
 		} else if (percentage > 0) {
 			saveDownloadState(tabId, {
 				isDownloading: true,
 				progress: percentage,
 				progressText: text || '',
-				downloadComplete: false
+				downloadComplete: false,
+				downloadFormat: formatToSave
 			}).catch(err => console.error('DownloadView: Error saving progress state:', err));
 		}
 	}
