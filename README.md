@@ -36,7 +36,7 @@
   <h3 align="center">Comics / Manga Downloader Extension</h3>
 
   <p align="center">
-    A cross browser extension to download comics / manga as pdf file from any site!
+    A cross browser extension to download comics / manga as PDF, CBZ, or ZIP from any site!
     <br />
     <a href="#how-to-use"><strong>How to use »</strong></a>
     <br />
@@ -93,7 +93,7 @@
 
 [![Comics / Manga Downloader Screen Shot][product-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension) 
 
-A simple cross browser extension to download comics / manga as pdf file from any site.
+A simple cross browser extension to download comics / manga as PDF, CBZ, or ZIP from any site.
 
 **Although this extension was created to download comics / manga, it will also work on any website which has `<img>` or `<canvas>` attribute.**
 
@@ -104,14 +104,16 @@ A simple cross browser extension to download comics / manga as pdf file from any
 - Visit any website.
 - Wait for all images to finish loading.
 - Click the extension icon to open the extension popup.
-- Select the images you want to include in the output PDF.
+- Select the images you want to include in the output.
 - You can filter images by image dimensions or by image URL.
-- Enter a file name, choose a download method, and click **Download**.
+- Enter a file name, choose **Download as** (PDF, CBZ, or ZIP), choose a download method, and click **Download**.
+  - **PDF** (default): Direct download or Built-in browser (print to PDF).
+  - **CBZ** or **ZIP**: Available via **Direct download** only; images are packaged in page order (e.g. 001.jpg, 002.png).
 
 ### Download methods
 
 **Direct Download**
-- The PDF will be downloaded automatically.
+- The file (PDF, CBZ, or ZIP) will be downloaded automatically.
 
 **Built-in Browser**
 - The browser’s print dialog will open.

@@ -1,617 +1,708 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Image Downloader</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Downloader</title>
 
-    <link rel="stylesheet" href="./css/main.css" type="text/css">
-    <link rel="stylesheet" href="./css/nouislider.min.css" type="text/css">
-    <style>
-        html,
-          body {
-            overflow-y: scroll;
-            overflow-x: hidden;
-            height: 100%;
-            margin: 0;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-          }
-          
-          * {
-            box-sizing: border-box;
-          }
-    
-          main {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-          }
-    
-          .grid {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 4px 0;
-          }
-    
-          .grid td {
-            padding: 2px;
-          }
-          .grid td:first-child {
-            padding-left: 0;
-          }
-          .grid td:last-child {
-            padding-right: 0;
-          }
-          .grid td input[type='text'],
-          .grid td input[type='button'],
-          .grid td input[type='number'],
-          .grid td select {
-            width: 100%;
-          }
-    
-          #filters_container,
-          #downloads_container {
-            z-index: 1;
-            position: sticky;
-            padding: 12px;
-            background: var(--neutral-lightest);
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-          }
-    
-          #filters_container {
-            top: 0;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-          }
+  <link rel="stylesheet" href="./css/main.css" type="text/css" />
+  <link rel="stylesheet" href="./css/nouislider.min.css" type="text/css" />
 
-          /* Select2-like dimension filter */
-          .dimension-filter-select2 {
-            position: relative;
-            flex: 1 1 0%;
-            width: 100%;
-            min-width: 0;
-          }
-          .dimension-filter-trigger {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 4px;
-            min-height: 32px;
-            padding: 4px 28px 4px 8px;
-            font-size: 12px;
-            line-height: 1.4;
-            border: 1px solid #aaa;
-            border-radius: 4px;
-            background: #fff;
-            cursor: pointer;
-            outline: none;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-          }
-          .dimension-filter-trigger:hover { border-color: #999; }
-          .dimension-filter-trigger:focus,
-          .dimension-filter-select2.open .dimension-filter-trigger {
-            border-color: #5897fb;
-            box-shadow: 0 0 0 1px #5897fb;
-          }
-          .dimension-filter-trigger::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            width: 0;
-            height: 0;
-            margin-top: -2px;
-            border: 5px solid transparent;
-            border-top-color: #666;
-            pointer-events: none;
-          }
-          .dimension-filter-select2.open .dimension-filter-trigger::after {
-            margin-top: -7px;
-            border-top-color: transparent;
-            border-bottom-color: #666;
-          }
-          .dimension-filter-placeholder {
-            color: #999;
-          }
-          .dimension-filter-choices {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-          }
-          .dimension-filter-choice {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 6px;
-            font-size: 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            background: #f4f4f4;
-            color: #333;
-            white-space: nowrap;
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .dimension-filter-choice .remove {
-            margin-left: 4px;
-            padding: 0 2px;
-            color: #999;
-            font-size: 16px;
-            line-height: 1;
-            cursor: pointer;
-            border: none;
-            background: none;
-          }
-          .dimension-filter-choice .remove:hover { color: #c00; }
-          .dimension-filter-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            margin-top: 2px;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #aaa;
-            border-radius: 4px;
-            background: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            display: none;
-          }
-          .dimension-filter-select2.open .dimension-filter-dropdown { display: block; }
-          .dimension-filter-option {
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.1s;
-          }
-          .dimension-filter-option:hover { background: #f0f0f0; }
-          .dimension-filter-option.selected { background: #e8f4ff; color: #333; }
-          .dimension-filter-option[data-value=""] { font-weight: 500; border-bottom: 1px solid #eee; }
+  <style>
+    html,
+    body {
+      overflow-y: scroll;
+      overflow-x: hidden;
+      height: 100%;
+      margin: 0;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
 
-          #clearQuery,
-          #open_options_button {
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 30px;
-            height: 30px;
-    
-            border-radius: var(--border-radius-md);
-            border: 0;
-            margin-bottom: 4px;
-            background: var(--input-background);
-          }
-    
-          #clearQuery .toggle {
-            height: 20px;
-    
-            transition: var(--transition-transform);
-          }
-    
-          #clearQuery.collapsed .toggle {
-            transform: rotate(-135deg);
-          }
-    
-          #open_options_button img {
-            height: 18px;
-          }
-    
-          .noUi-state-drag {
-            cursor: grabbing;
-          }
-    
-          .noUi-horizontal {
-            height: 12px;
-          }
-    
-          .noUi-target {
-            border-color: var(--accent);
-            transition: var(--transition-border-color);
-          }
-    
-          .noUi-target[disabled] {
-            border-color: var(--border-color);
-          }
-    
-          .noUi-connects {
-            cursor: pointer;
-          }
-    
-          .noUi-connect {
-            background: var(--accent);
-            transition: var(--transition-background);
-          }
-    
-          .noUi-target[disabled] .noUi-connect {
-            background: var(--input-background);
-          }
-    
-          .noUi-horizontal .noUi-origin .noUi-handle {
-            cursor: grab;
-            top: -5px;
-            right: -9px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border-color: var(--accent);
-    
-            transition: var(--transition-border-color);
-          }
-    
-          .noUi-horizontal .noUi-origin[disabled] .noUi-handle {
-            cursor: help;
-            border-color: var(--border-color);
-          }
-    
-          .noUi-handle::before,
-          .noUi-handle::after {
-            top: 3px;
-            height: 10px;
-          }
-    
-          .noUi-handle::before {
-            left: 6px;
-          }
-    
-          .noUi-handle::after {
-            left: 9px;
-          }
-    
-          #only_images_from_links_container {
-            padding: 1px;
-          }
-    
-          #images_container {
-            flex: 1;
-    
-            display: grid;
-            gap: var(--images-container-gap);
-            padding: var(--images-container-padding);
-            padding-top: 9px; /* Account for checkbox 3px margin */
-            background: var(--neutral-lighter);
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-          }
-    
-          #select_all_checkbox_container .select_all_checkbox {
-            grid-column: 1 / -1;
-            font-weight: bold;
-          }
-    
-          #images_container .card {
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
-    
-            display: grid;
-            grid-template-rows: 1fr auto;
-            justify-items: center;
-            align-items: center;
-            min-height: 200px;
-    
-            box-shadow: var(--elevation-1);
-            border-radius: var(--border-radius-sm);
-            border: 2px solid transparent;
-            background: var(--neutral-lightest);
-    
-            transition: var(--transition-border-color), var(--transition-box-shadow);
-          }
-          
-          #images_container .card > img {
-            grid-row: 1;
-            align-self: center;
-            justify-self: center;
-          }
-    
-          #images_container .card:hover {
-            box-shadow: var(--elevation-2);
-          }
-    
-          #images_container .card.checked {
-            border-color: var(--accent);
-          }
-    
-          #images_container img {
-            background: var(--image-background); /* Useful for transparent images */
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain; /* Preserve aspect ratio, fit within container */
-            display: block; /* Remove inline spacing */
-          }
-    
-          #images_container .checkbox,
-          #images_container .image_url_container,
-          #images_container .actions {
-            position: absolute;
-    
-            transition: var(--transition-opacity);
-            opacity: 0;
-          }
-    
-          #images_container .card.checked .checkbox,
-          #images_container .card:hover .checkbox,
-          #images_container .card:hover .image_url_container,
-          #images_container .card:hover .actions {
-            opacity: 1;
-          }
-    
-          #images_container .checkbox {
-            top: 4px;
-            left: 4px;
-          }
-    
-          #images_container .actions {
-            top: 4px;
-            right: 4px;
-          }
-    
-          #images_container .actions button {
-            cursor: pointer;
-            border-radius: var(--border-radius-md);
-            border: 2px solid var(--neutral);
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 24px;
-            padding: 15px;
-    
-            transition: var(--transition-background);
-            background-color: var(--neutral-lightest);
-          }
-    
-          #images_container .actions button:hover {
-            background-color: var(--neutral-lighter);
-          }
-    
-          #images_container .image_url_container {
-            right: 4px;
-            bottom: 4px;
-            left: 4px;
-          }
-    
-          /* checkbox */
+    * { box-sizing: border-box; }
 
-          #select_all_checkbox_container {
-            flex: 1;
-            display: grid;
-            gap: var(--images-container-gap);
-            padding: var(--images-container-padding);
-            padding-top: 9px;
-            background: var(--neutral-lighter);
-          }
+    main {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
 
-          #images_container .checkbox {
-            width: 34px;
-            height: 34px;
-    
-            border-radius: var(--border-radius-md);
-            border: 2px solid var(--neutral);
-            background: var(--neutral-lightest);
-    
-            transition: var(--transition-background), var(--transition-border-color),
-              var(--transition-opacity);
-          }
-    
-          #images_container .card.checked .checkbox {
-            background: var(--accent);
-            border-color: var(--accent);
-          }
-    
-          #images_container .checkbox::after {
-            position: absolute;
-            top: calc(50% - 9px);
-            left: calc(50% - 9px);
-            width: 18px;
-            height: 12px;
-            content: '';
-            transform: rotate(-45deg);
-            border: 4px solid var(--neutral-lightest);
-            border-top: 0;
-            border-right: 0;
-    
-            transition: var(--transition-border-color), var(--transition-opacity);
-          }
-    
-          #images_container .card:hover .checkbox::after {
-            border-color: var(--neutral-light);
-          }
-    
-          #images_container .card.checked .checkbox::after {
-            border-color: var(--neutral-lightest);
-          }
-          /* checkbox */
-    
-          /* actions */
-          #images_container .actions {
-            display: flex;
-            gap: 4px;
-          }
-          /* actions */
-    
-          /* image_url_container */
-          #images_container .image_url_container {
-            background: var(--neutral-lighter);
-          }
-    
-          #images_container .image_url_container input[type='text'] {
-            width: 100%;
-            margin-bottom: 0;
-          }
-          /* image_url_container */
-    
-          #downloads_container {
-            bottom: 0;
-            display: grid;
-            gap: 4px;
-            border-top: 1px solid var(--border-color);
-          }
+    .grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0;
+    }
 
-          /* Downloading Overlay */
-          #downloading_overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 10000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--neutral-lightest);
-          }
+    .grid td { padding: 2px; }
+    .grid td:first-child { padding-left: 0; }
+    .grid td:last-child { padding-right: 0; }
+    .grid td input[type='text'],
+    .grid td input[type='button'],
+    .grid td input[type='number'],
+    .grid td select { width: 100%; }
 
-          #downloading_overlay.show {
-            display: flex;
-          }
+    #filters_container,
+    #downloads_container {
+      z-index: 1;
+      position: sticky;
+      padding: 12px;
+      background: var(--neutral-lightest);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
 
-          #downloading_content {
-            text-align: center;
-            padding: 24px;
-            background: var(--neutral-lightest);
-            color: var(--neutral);
-            border-radius: var(--border-radius-md);
-            box-shadow: var(--elevation-3);
-            min-width: 300px;
-            max-width: 400px;
-          }
+    #filters_container {
+      top: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
 
-          #downloading_content h3 {
-            margin: 0 0 16px 0;
-            font-size: 18px;
-            color: var(--neutral);
-          }
+    /* Select2-like dimension filter */
+    .dimension-filter-select2 {
+      position: relative;
+      flex: 1 1 0%;
+      width: 100%;
+      min-width: 0;
+    }
+    .dimension-filter-trigger {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      min-height: 32px;
+      padding: 4px 28px 4px 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .dimension-filter-trigger:hover { border-color: #999; }
+    .dimension-filter-trigger:focus,
+    .dimension-filter-select2.open .dimension-filter-trigger {
+      border-color: #5897fb;
+      box-shadow: 0 0 0 1px #5897fb;
+    }
+    .dimension-filter-trigger::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      width: 0;
+      height: 0;
+      margin-top: -2px;
+      border: 5px solid transparent;
+      border-top-color: #666;
+      pointer-events: none;
+    }
+    .dimension-filter-select2.open .dimension-filter-trigger::after {
+      margin-top: -7px;
+      border-top-color: transparent;
+      border-bottom-color: #666;
+    }
+    .dimension-filter-placeholder { color: #999; }
+    .dimension-filter-choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .dimension-filter-choice {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      font-size: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background: #f4f4f4;
+      color: #333;
+      white-space: nowrap;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dimension-filter-choice .remove {
+      margin-left: 4px;
+      padding: 0 2px;
+      color: #999;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+    .dimension-filter-choice .remove:hover { color: #c00; }
+    .dimension-filter-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      margin-top: 2px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      display: none;
+    }
+    .dimension-filter-select2.open .dimension-filter-dropdown { display: block; }
+    .dimension-filter-option {
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .dimension-filter-option:hover { background: #f0f0f0; }
+    .dimension-filter-option.selected { background: #e8f4ff; color: #333; }
+    .dimension-filter-option[data-value=""] {
+      font-weight: 500;
+      border-bottom: 1px solid #eee;
+    }
 
-          #download_progress_bar {
-            width: 100%;
-            height: 8px;
-            background: var(--input-background);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 16px 0;
-          }
+    #clearQuery,
+    #open_options_button {
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px;
+      height: 30px;
 
-          #download_progress_fill {
-            height: 100%;
-            background: var(--accent);
-            width: 0%;
-            transition: width 0.3s ease;
-          }
+      border-radius: var(--border-radius-md);
+      border: 0;
+      margin-bottom: 4px;
+      background: var(--input-background);
+    }
 
-          #download_progress_text {
-            font-size: 14px;
-            color: var(--neutral);
-            margin-top: 8px;
-          }
+    #clearQuery .toggle {
+      height: 20px;
+      transition: var(--transition-transform);
+    }
+    #clearQuery.collapsed .toggle { transform: rotate(-135deg); }
 
-          #download_error_message {
-            color: #d32f2f;
-            margin-top: 12px;
-            font-size: 14px;
-            display: none;
-          }
+    #open_options_button img { height: 18px; }
 
-          #download_error_message.show {
-            display: block;
-          }
+    .noUi-state-drag { cursor: grabbing; }
+    .noUi-horizontal { height: 12px; }
+    .noUi-target {
+      border-color: var(--accent);
+      transition: var(--transition-border-color);
+    }
+    .noUi-target[disabled] { border-color: var(--border-color); }
+    .noUi-connects { cursor: pointer; }
+    .noUi-connect {
+      background: var(--accent);
+      transition: var(--transition-background);
+    }
+    .noUi-target[disabled] .noUi-connect { background: var(--input-background); }
 
-          #download_overlay_close {
-            display: none;
-            margin-top: 16px;
-            padding: 8px 20px;
-            font-size: 14px;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-md);
-            background: var(--neutral-lightest);
-            color: var(--neutral);
-          }
-          #download_overlay_close:hover {
-            background: var(--neutral-lighter);
-          }
-          #downloading_overlay.show-close #download_overlay_close {
-            display: inline-block;
-          }
-    </style>
+    .noUi-horizontal .noUi-origin .noUi-handle {
+      cursor: grab;
+      top: -5px;
+      right: -9px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border-color: var(--accent);
+      transition: var(--transition-border-color);
+    }
+    .noUi-horizontal .noUi-origin[disabled] .noUi-handle {
+      cursor: help;
+      border-color: var(--border-color);
+    }
+
+    .noUi-handle::before,
+    .noUi-handle::after {
+      top: 3px;
+      height: 10px;
+    }
+    .noUi-handle::before { left: 6px; }
+    .noUi-handle::after { left: 9px; }
+
+    #only_images_from_links_container { padding: 1px; }
+
+    #images_container {
+      flex: 1;
+      display: grid;
+      gap: var(--images-container-gap);
+      padding: var(--images-container-padding);
+      padding-top: 9px; /* Account for checkbox 3px margin */
+      background: var(--neutral-lighter);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    #select_all_checkbox_container .select_all_checkbox {
+      grid-column: 1 / -1;
+      font-weight: bold;
+    }
+
+    #images_container .card {
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+
+      display: grid;
+      grid-template-rows: 1fr auto;
+      justify-items: center;
+      align-items: center;
+      min-height: 200px;
+
+      box-shadow: var(--elevation-1);
+      border-radius: var(--border-radius-sm);
+      border: 2px solid transparent;
+      background: var(--neutral-lightest);
+
+      transition: var(--transition-border-color), var(--transition-box-shadow);
+    }
+
+    #images_container .card > img {
+      grid-row: 1;
+      align-self: center;
+      justify-self: center;
+    }
+
+    #images_container .card:hover { box-shadow: var(--elevation-2); }
+    #images_container .card.checked { border-color: var(--accent); }
+
+    #images_container img {
+      background: var(--image-background); /* Useful for transparent images */
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Preserve aspect ratio, fit within container */
+      display: block; /* Remove inline spacing */
+    }
+
+    #images_container .checkbox,
+    #images_container .image_url_container,
+    #images_container .actions {
+      position: absolute;
+      transition: var(--transition-opacity);
+      opacity: 0;
+    }
+
+    #images_container .card.checked .checkbox,
+    #images_container .card:hover .checkbox,
+    #images_container .card:hover .image_url_container,
+    #images_container .card:hover .actions { opacity: 1; }
+
+    #images_container .checkbox { top: 4px; left: 4px; }
+
+    #images_container .actions { top: 4px; right: 4px; }
+
+    #images_container .actions button {
+      cursor: pointer;
+      border-radius: var(--border-radius-md);
+      border: 2px solid var(--neutral);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 24px;
+      padding: 15px;
+      transition: var(--transition-background);
+      background-color: var(--neutral-lightest);
+    }
+    #images_container .actions button:hover { background-color: var(--neutral-lighter); }
+
+    #images_container .image_url_container { right: 4px; bottom: 4px; left: 4px; }
+
+    /* checkbox */
+    #select_all_checkbox_container {
+      flex: 1;
+      display: grid;
+      gap: var(--images-container-gap);
+      padding: var(--images-container-padding);
+      padding-top: 9px;
+      background: var(--neutral-lighter);
+    }
+
+    #images_container .checkbox {
+      width: 34px;
+      height: 34px;
+
+      border-radius: var(--border-radius-md);
+      border: 2px solid var(--neutral);
+      background: var(--neutral-lightest);
+
+      transition: var(--transition-background), var(--transition-border-color), var(--transition-opacity);
+    }
+
+    #images_container .card.checked .checkbox {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    #images_container .checkbox::after {
+      position: absolute;
+      top: calc(50% - 9px);
+      left: calc(50% - 9px);
+      width: 18px;
+      height: 12px;
+      content: '';
+      transform: rotate(-45deg);
+      border: 4px solid var(--neutral-lightest);
+      border-top: 0;
+      border-right: 0;
+      transition: var(--transition-border-color), var(--transition-opacity);
+    }
+
+    #images_container .card:hover .checkbox::after { border-color: var(--neutral-light); }
+    #images_container .card.checked .checkbox::after { border-color: var(--neutral-lightest); }
+    /* checkbox */
+
+    /* actions */
+    #images_container .actions {
+      display: flex;
+      gap: 4px;
+    }
+    /* actions */
+
+    /* image_url_container */
+    #images_container .image_url_container { background: var(--neutral-lighter); }
+    #images_container .image_url_container input[type='text'] {
+      width: 100%;
+      margin-bottom: 0;
+    }
+    /* image_url_container */
+
+    /* Downloading Overlay */
+    #downloading_overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: var(--neutral-lightest);
+    }
+
+    #downloading_overlay.show { display: flex; }
+
+    #downloading_content {
+      text-align: center;
+      padding: 24px;
+      background: var(--neutral-lightest);
+      color: var(--neutral);
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--elevation-3);
+      min-width: 300px;
+      max-width: 400px;
+    }
+
+    #downloading_content h3 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      color: var(--neutral);
+    }
+
+    #download_progress_bar {
+      width: 100%;
+      height: 8px;
+      background: var(--input-background);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+
+    #download_progress_fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    #download_progress_text {
+      font-size: 14px;
+      color: var(--neutral);
+      margin-top: 8px;
+    }
+
+    #download_error_message {
+      color: #d32f2f;
+      margin-top: 12px;
+      font-size: 14px;
+      display: none;
+    }
+
+    #download_error_message.show { display: block; }
+
+    #download_overlay_close {
+      display: none;
+      margin-top: 16px;
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-md);
+      background: var(--neutral-lightest);
+      color: var(--neutral);
+    }
+    #download_overlay_close:hover { background: var(--neutral-lighter); }
+    #downloading_overlay.show-close #download_overlay_close { display: inline-block; }
+
+    #download_format_wrapper,
+    #download_type_wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .download-section-label {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: nowrap;
+      flex-shrink: 0;
+      height: 1.25em;
+    }
+
+    #download_format_wrapper select,
+    #download_type_wrapper select {
+      width: 100%;
+      min-height: 32px;
+      box-sizing: border-box;
+    }
+
+    .download-direct-only-hint {
+      margin: 0;
+      font-size: 11px;
+      color: var(--neutral, #666);
+      line-height: 1.2;
+    }
+
+    /* =========================================================
+       ✅ PROFESSIONAL DOWNLOAD BAR (drop-in replacement)
+       This overrides the earlier #downloads_container styles.
+       ========================================================= */
+
+    #downloads_container{
+      position: sticky;
+      bottom: 0;
+
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) minmax(140px, 180px) minmax(180px, 240px) 120px;
+      gap: 12px;
+
+      padding: 12px 16px;
+      align-items: end;
+
+      background: var(--neutral-lightest);
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    #download_format_wrapper,
+    #download_type_wrapper{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .download-section-label{
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.65);
+      height: 12px; /* fixed label row height */
+      white-space: nowrap;
+    }
+
+    #downloads_container input[type="text"],
+    #downloads_container select,
+    #downloads_container input[type="button"]{
+      height: 36px;
+      font-size: 13px;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    /* Filename + button need to visually align with label+control groups */
+    #fileName{
+      margin-top: calc(12px + 6px); /* label height + gap */
+      padding: 0 10px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    #downloadFormat,
+    #downloadType{
+      padding: 0 10px;
+      width: 100%;
+      min-width: 0;
+      min-height: 36px; /* normalize */
+    }
+
+    #download{
+      margin-top: calc(12px + 6px);
+      padding: 0 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    #download:disabled{
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    #download_direct_only_hint{
+      margin: 6px 0 0 0;
+      font-size: 11px;
+      line-height: 1.25;
+      color: rgba(0,0,0,0.6);
+    }
+
+    @media (max-width: 720px){
+      #downloads_container{
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto;
+      }
+
+      #fileName{
+        grid-column: 1 / -1;
+        margin-top: 0; /* stacked layout */
+      }
+
+      #download{
+        grid-column: 1 / -1;
+        margin-top: 0;
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
-    <main>
-        <div id="filters_container">
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <input type="text" id="query" placeholder="Filter by URL" title="Filter by parts of the URL or regular expressions." value="" style="flex: 1 1 0%;">
+  <main>
+    <div id="filters_container">
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <input
+          type="text"
+          id="query"
+          placeholder="Filter by URL"
+          title="Filter by parts of the URL or regular expressions."
+          value=""
+          style="flex: 1 1 0%;"
+        />
 
-              <button id="clearQuery" class="" title="Toggle advanced filters">
-                <img class="toggle" src="./images/times.svg">
-              </button>
-              <button id="open_options_button" title="Options" style="visibility: hidden;">
-                <img src="./images/cog.svg"></button>
-              </div>
-            <div style="display: flex; align-items: center; gap: 4px; margin-top: 8px;">
-              <label for="dimensionFilter" style="font-size: 12px; white-space: nowrap;">Filter by dimensions:</label>
-              <div id="dimensionFilter" class="dimension-filter-select2" title="Filter images by dimensions">
-                <div class="dimension-filter-trigger" tabindex="0">
-                  <span class="dimension-filter-placeholder">Select dimensions...</span>
-                  <span class="dimension-filter-choices"></span>
-                </div>
-                <div class="dimension-filter-dropdown">
-                  <div class="dimension-filter-option" data-value="">All dimensions</div>
-                </div>
-              </div>
-            </div>
-            <div>
-                <table class="grid">
-                    <colgroup>
-                        <col style="width: 45px;">
-                        <col style="width: 70px;">
-                        <col>
-                        <col style="width: 70px;">
-                    </colgroup>
-                </table>
-              </div>
-        </div>
-        <div class="hidden"></div>
+        <button id="clearQuery" class="" title="Toggle advanced filters">
+          <img class="toggle" src="./images/times.svg" />
+        </button>
+        <button id="open_options_button" title="Options" style="visibility: hidden;">
+          <img src="./images/cog.svg" />
+        </button>
+      </div>
 
-        <div id="select_all_checkbox_container">
+      <div style="display: flex; align-items: center; gap: 4px; margin-top: 8px;">
+        <label for="dimensionFilter" style="font-size: 12px; white-space: nowrap;">Filter by dimensions:</label>
+        <div id="dimensionFilter" class="dimension-filter-select2" title="Filter images by dimensions">
+          <div class="dimension-filter-trigger" tabindex="0">
+            <span class="dimension-filter-placeholder">Select dimensions...</span>
+            <span class="dimension-filter-choices"></span>
+          </div>
+          <div class="dimension-filter-dropdown">
+            <div class="dimension-filter-option" data-value="">All dimensions</div>
+          </div>
+        </div>
+      </div>
 
-        </div>
-
-        <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: 100%; max-width: 100%;">
-          Loading...
-
-        </div>
-        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px; width: 100%; max-width: 100%; box-sizing: border-box;">
-          <input type="text" id="fileName" placeholder="File name" title="Set the name of the file you want to download as pdf." value="">
-          <select id="downloadType" title="Select a driver to download the pdf">
-            <option value="jspdf">Direct Download</option>
-            <option value="browser">Built-In Browser</option>
-          </select>
-          <input type="button" id="download" class="accent " disabled="" title="Select some images to download first" value="Download">
-        </div>
-    </main>
-    
-    <!-- Downloading Overlay -->
-    <div id="downloading_overlay">
-      <div id="downloading_content">
-        <h3>Downloading PDF...</h3>
-        <div id="download_progress_bar">
-          <div id="download_progress_fill"></div>
-        </div>
-        <div id="download_progress_text">Preparing download...</div>
-        <div id="download_error_message"></div>
-        <button type="button" id="download_overlay_close" aria-label="Close">Close</button>
+      <div>
+        <table class="grid">
+          <colgroup>
+            <col style="width: 45px;">
+            <col style="width: 70px;">
+            <col>
+            <col style="width: 70px;">
+          </colgroup>
+        </table>
       </div>
     </div>
-</body>
 
+    <div class="hidden"></div>
+
+    <div id="select_all_checkbox_container"></div>
+
+    <div id="images_container" style="grid-template-columns: repeat(2, minmax(0px, 1fr)); width: 100%; max-width: 100%;">
+      Loading...
+    </div>
+
+    <div id="downloads_container">
+      <input
+        type="text"
+        id="fileName"
+        placeholder="File name"
+        title="Set the name of the downloaded file (PDF, CBZ, or ZIP)."
+        value=""
+      />
+
+      <div id="download_format_wrapper">
+        <label for="downloadFormat" class="download-section-label">Download as:</label>
+        <select id="downloadFormat" title="Choose output format: PDF, CBZ, or ZIP">
+          <option value="pdf" selected>PDF</option>
+          <option value="cbz">CBZ</option>
+          <option value="zip">ZIP</option>
+        </select>
+      </div>
+
+      <div id="download_type_wrapper">
+        <label for="downloadType" class="download-section-label">Method:</label>
+        <select id="downloadType" title="Select a driver to download (Direct download or Built-in browser for PDF)">
+          <option value="jspdf">Direct Download</option>
+          <option value="browser">Built-In Browser</option>
+        </select>
+        <!-- <p id="download_direct_only_hint" class="download-direct-only-hint" style="display: none;">
+          CBZ/ZIP downloads are available via Direct download only.
+        </p> -->
+      </div>
+
+      <input
+        type="button"
+        id="download"
+        class="accent"
+        disabled
+        title="Select some images to download first"
+        value="Download"
+      />
+    </div>
+  </main>
+
+  <!-- Downloading Overlay -->
+  <div id="downloading_overlay">
+    <div id="downloading_content">
+      <h3 id="download_overlay_title">Downloading PDF...</h3>
+      <div id="download_progress_bar">
+        <div id="download_progress_fill"></div>
+      </div>
+      <div id="download_progress_text">Preparing download...</div>
+      <div id="download_error_message"></div>
+      <button type="button" id="download_overlay_close" aria-label="Close">Close</button>
+    </div>
+  </div>
+</body>
 </html>

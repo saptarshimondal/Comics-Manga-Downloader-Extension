@@ -97,6 +97,46 @@ export const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight
     return { width: srcWidth*ratio, height: srcHeight*ratio };
 }
 
+/**
+ * Sanitize a string for use as a filesystem-safe filename.
+ * Removes invalid characters, collapses whitespace, avoids reserved names, and trims length.
+ * @param {string} fileName - Raw filename (no path, extension optional)
+ * @returns {string} Sanitized base name safe for Windows, Linux, macOS
+ */
+export const sanitizeFileName = (fileName) => {
+    if (!fileName || typeof fileName !== 'string') return '';
+    // Remove invalid characters for Windows, Linux, macOS
+    let sanitized = fileName
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+        .replace(/[\x7F-\x9F]/g, '');
+    sanitized = sanitized.replace(/[\s\t]+/g, ' ').trim();
+    sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, '');
+    const reservedNames = [
+        'CON', 'PRN', 'AUX', 'NUL',
+        'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+        'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+    ];
+    const nameWithoutExt = sanitized.split('.')[0].toUpperCase();
+    if (nameWithoutExt && reservedNames.includes(nameWithoutExt)) {
+        sanitized = '_' + sanitized;
+    }
+    const maxLength = 200;
+    if (sanitized.length > maxLength) {
+        const lastDot = sanitized.lastIndexOf('.');
+        if (lastDot > 0 && lastDot < sanitized.length - 1) {
+            const ext = sanitized.substring(lastDot);
+            const name = sanitized.substring(0, lastDot);
+            sanitized = name.substring(0, maxLength - ext.length) + ext;
+        } else {
+            sanitized = sanitized.substring(0, maxLength);
+        }
+    }
+    if (!sanitized || sanitized.trim() === '') {
+        sanitized = 'download';
+    }
+    return sanitized;
+};
+
 export const getBase64ImageMime = (data) => {
     try {
         if (!data || typeof data !== 'string') {

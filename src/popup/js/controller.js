@@ -73,7 +73,7 @@ export const selectAllController = function (checkVal) {
 	DownloadView.render(images);
 }
 
-const downloaderController = async function (fileName, downloadType, progressCallback = ()=>{}) {
+const downloaderController = async function (baseName, downloadType, downloadFormat, progressCallback = ()=>{}) {
 
 	try {
 		const images = getState('filteredImages').filter(img => img.checked);
@@ -85,7 +85,6 @@ const downloaderController = async function (fileName, downloadType, progressCal
 
 		const [tab] = await browser.tabs.query({active: true, currentWindow: true});
 
-		// Inject content script using Manifest V3 API
 		progressCallback(10, 'Injecting content script...');
 		await browser.scripting.executeScript({
 			target: { tabId: tab.id },
@@ -95,45 +94,50 @@ const downloaderController = async function (fileName, downloadType, progressCal
 		progressCallback(20, 'Preparing images...');
 
 		if (downloadType === 'browser') {
-			// Browser download - simpler, just open print dialog
+			// Browser download - PDF only (CBZ/ZIP use Direct download only)
 			progressCallback(50, 'Opening print dialog...');
 			await browser.tabs.sendMessage(tab.id, {
-				"method": "generatePDF", 
-				"fileName": fileName,
+				"method": "generatePDF",
+				"fileName": baseName,
 				"downloadType": downloadType,
+				"downloadFormat": "pdf",
 				"images": images
 			});
 			progressCallback(100, 'Print dialog opened!');
-		} else if (downloadType === 'jspdf') {
-			// JSPDF download - process images directly in content script to avoid 64MB limit
+		} else if (downloadFormat === 'cbz' || downloadFormat === 'zip') {
+			// Archive (CBZ/ZIP) - always Direct download, content script builds zip
+			progressCallback(5, 'Preparing to build archive...');
+			await browser.tabs.sendMessage(tab.id, {
+				"method": "generateArchive",
+				"fileName": baseName,
+				"downloadFormat": downloadFormat,
+				"images": images
+			}).then((response) => {
+				console.log('Archive generation response:', response);
+			}).catch((error) => {
+				console.error('Error generating archive:', error);
+				throw new Error(error.message || 'Unknown error');
+			});
+		} else {
+			// PDF via JSPDF (Direct download)
 			progressCallback(5, 'Preparing to process images...');
-			
-			// Send message to content script to generate PDF
-			// Content script will process images directly to avoid 64MB message limit
-			// Progress updates will be sent via messages and handled by DownloadView
 			browser.tabs.sendMessage(tab.id, {
-				"method": "generatePDF", 
-				"fileName": fileName,
+				"method": "generatePDF",
+				"fileName": baseName,
 				"downloadType": downloadType,
-				"images": images // Pass original images, content script will process them
+				"downloadFormat": "pdf",
+				"images": images
 			}).then((response) => {
 				console.log('PDF generation response:', response);
-				// Progress will be updated via messages from content script
-				// Don't set to 100% here - let content script send final progress
 			}).catch((error) => {
 				console.error('Error generating PDF:', error);
-				console.error('Error details:', {
-					message: error.message,
-					stack: error.stack,
-					tabId: tab.id
-				});
 				throw new Error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
 			});
 		}
 
 	} catch(e) {
 		console.error('Download error:', e);
-		throw e; // Re-throw to be handled by DownloadView
+		throw e;
 	}
 
 };
