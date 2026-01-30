@@ -1,4 +1,25 @@
-import { sanitizeFileName } from '../helpers';
+import { sanitizeFileName, getOverlayTitleForDownloadFormat } from '../helpers';
+
+describe('getOverlayTitleForDownloadFormat', () => {
+  it('returns correct overlay label for PDF', () => {
+    expect(getOverlayTitleForDownloadFormat('pdf')).toBe('Downloading PDF...');
+  });
+
+  it('returns correct overlay label for CBZ (closing/reopening modal retains label)', () => {
+    expect(getOverlayTitleForDownloadFormat('cbz')).toBe('Downloading CBZ...');
+  });
+
+  it('returns correct overlay label for ZIP (closing/reopening modal retains label)', () => {
+    expect(getOverlayTitleForDownloadFormat('zip')).toBe('Downloading ZIP...');
+  });
+
+  it('defaults to PDF for invalid or missing format', () => {
+    expect(getOverlayTitleForDownloadFormat(null)).toBe('Downloading PDF...');
+    expect(getOverlayTitleForDownloadFormat(undefined)).toBe('Downloading PDF...');
+    expect(getOverlayTitleForDownloadFormat('')).toBe('Downloading PDF...');
+    expect(getOverlayTitleForDownloadFormat('invalid')).toBe('Downloading PDF...');
+  });
+});
 
 describe('sanitizeFileName', () => {
   it('returns empty string for null/empty', () => {
