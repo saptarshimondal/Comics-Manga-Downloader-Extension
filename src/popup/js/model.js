@@ -7,7 +7,7 @@ const state = {
 		{ 'filteredImages': [] },
 		{ 'query': '' },
 		{ 'imageDimensions': {} }, // Store dimensions by image key (src|type): { 'url1|url': '100x200', 'data1|data': '500x500', ... }
-		{ 'selectedDimensionFilters': [] }, // Currently selected dimension filters (array for multiple selection)
+		{ 'selectedDimensionFilters': [] } // Currently selected dimension filters (array for multiple selection)
 	]
 };
 

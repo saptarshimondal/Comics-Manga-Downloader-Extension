@@ -1,6 +1,8 @@
 import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump } from '../popup/js/helpers';
+import { getPaddedEntryName, mimeToExtension } from '../popup/js/archiveHelpers';
 import { jsPDF } from 'jspdf';
-import FileSaver from 'file-saver'
+import FileSaver from 'file-saver';
+import JSZip from 'jszip';
 
 (function () {
 
@@ -82,7 +84,175 @@ import FileSaver from 'file-saver'
 
   const fetchTitle = function () {
     return document.title;
-  }
+  };
+
+  // Shared image-to-base64 and fetch helpers for both PDF and archive generation
+  const imageToBase64 = (imgSrc) => {
+    return new Promise((resolve, reject) => {
+      const allImgs = Array.from(document.querySelectorAll('img'));
+      let imgElement = allImgs.find(img => img.src === imgSrc);
+      if (!imgElement && imgSrc) {
+        try {
+          const targetUrl = new URL(imgSrc);
+          imgElement = allImgs.find(img => {
+            try {
+              const imgUrl = new URL(img.src);
+              return imgUrl.origin === targetUrl.origin && imgUrl.pathname === targetUrl.pathname;
+            } catch (e) { return false; }
+          });
+        } catch (e) {}
+      }
+      if (!imgElement) {
+        imgElement = allImgs.find(img => img.getAttribute('src') === imgSrc || img.getAttribute('data-src') === imgSrc);
+      }
+      if (!imgElement) {
+        imgElement = allImgs.find(img => {
+          const a = (img.src || '').split('?')[0];
+          const b = (imgSrc || '').split('?')[0];
+          return a === b || (img.src && img.src.includes(b)) || (imgSrc && imgSrc.includes(a));
+        });
+      }
+      if (imgElement) {
+        if (!imgElement.complete || imgElement.naturalWidth === 0) {
+          const onLoad = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = imgElement.naturalWidth || imgElement.width;
+              canvas.height = imgElement.naturalHeight || imgElement.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(imgElement, 0, 0);
+              resolve({ data: canvas.toDataURL('image/jpeg', 0.95), mime: 'jpeg' });
+            } catch (err) { reject(err); }
+          };
+          const onError = () => reject(new Error('Image failed to load'));
+          imgElement.addEventListener('load', onLoad, { once: true });
+          imgElement.addEventListener('error', onError, { once: true });
+          if (imgElement.complete && imgElement.naturalWidth === 0) {
+            setTimeout(() => imgElement.naturalWidth > 0 ? onLoad() : onError(), 100);
+          }
+          return;
+        }
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = imgElement.naturalWidth || imgElement.width;
+          canvas.height = imgElement.naturalHeight || imgElement.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(imgElement, 0, 0);
+          resolve({ data: canvas.toDataURL('image/jpeg', 0.95), mime: 'jpeg' });
+        } catch (err) { reject(err); }
+        return;
+      }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.addEventListener('load', () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve({ data: canvas.toDataURL('image/jpeg', 0.95), mime: 'jpeg' });
+        } catch (err) { reject(err); }
+      }, { once: true });
+      img.addEventListener('error', () => reject(new Error('Failed to load image')), { once: true });
+      img.src = imgSrc;
+      setTimeout(() => { if (!img.complete) reject(new Error('Image load timeout')); }, 5000);
+    });
+  };
+
+  const fetchImageViaBackground = (imgSrc) => {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Background script request timed out')), 30000);
+      browser.runtime.sendMessage({ method: 'fetchImage', src: imgSrc })
+        .then((response) => {
+          clearTimeout(timeout);
+          if (browser.runtime.lastError) { reject(new Error(browser.runtime.lastError.message)); return; }
+          if (!response) { reject(new Error('No response from background script')); return; }
+          if (response.error) { reject(new Error(response.error)); return; }
+          if (response.data) resolve({ data: response.data, mime: response.mime || 'jpeg' });
+          else reject(new Error('Invalid response from background script'));
+        })
+        .catch(err => { clearTimeout(timeout); reject(err); });
+    });
+  };
+
+  const processImagesInContentScript = async (images, progressCallback) => {
+    const checkedImages = images.filter(img => img.checked);
+    const total = checkedImages.length;
+    let processed = 0;
+    const processedImages = [];
+    for (let i = 0; i < images.length; i++) {
+      const { src, type, checked, originalSrc } = images[i];
+      if (!checked) continue;
+      try {
+        let imageData = null;
+        let mime = null;
+        const imageSrc = originalSrc || src;
+        if (type === 'url' || (type === 'data' && originalSrc)) {
+          try {
+            const image = await imageToBase64(imageSrc);
+            imageData = image.data;
+            mime = image.mime;
+          } catch (canvasError) {
+            try {
+              const image = await fetchImageViaBackground(imageSrc);
+              if (!image || !image.data) throw new Error('Invalid image data');
+              imageData = image.data;
+              mime = image.mime || 'jpeg';
+              if (!mime || mime === 'UNKNOWN') {
+                const m = imageData.match(/data:image\/([^;]+)/);
+                mime = m ? (m[1].toLowerCase() === 'jpg' ? 'jpeg' : m[1].toLowerCase()) : 'jpeg';
+              }
+            } catch (fetchError) {
+              processed++;
+              if (progressCallback && total > 0) progressCallback(Math.round((processed / total) * 100), `Processing image ${processed} of ${total}...`);
+              continue;
+            }
+          }
+        } else {
+          mime = getBase64ImageMime(src) || 'jpeg';
+          if (mime === 'jpg') mime = 'jpeg';
+          imageData = src;
+        }
+        if (imageData && mime) {
+          processedImages.push({ src: imageData, mime, type, checked, index: processedImages.length });
+        }
+        processed++;
+        if (progressCallback && total > 0) progressCallback(Math.round((processed / total) * 100), `Processing image ${processed} of ${total}...`);
+      } catch (err) {
+        processed++;
+        if (progressCallback && total > 0) progressCallback(Math.round((processed / total) * 100), `Processing image ${processed} of ${total}...`);
+      }
+    }
+    return processedImages;
+  };
+
+  const downloadAsArchive = async ({ fileName, downloadFormat, images }) => {
+    const progressCallback = (progress, text) => {
+      browser.runtime.sendMessage({ type: 'downloadProgress', progress, text }).catch(() => {});
+    };
+    progressCallback(5, 'Starting image processing...');
+    const processedImages = await processImagesInContentScript(images, progressCallback);
+    if (!processedImages || processedImages.length === 0) {
+      throw new Error('No valid images to download. Some images may have unsupported formats.');
+    }
+    const total = processedImages.length;
+    const zip = new JSZip();
+    for (let i = 0; i < processedImages.length; i++) {
+      const img = processedImages[i];
+      const name = getPaddedEntryName(i, total, img.mime);
+      const base64Data = img.src.replace(/^data:image\/[^;]+;base64,/, '');
+      zip.file(name, base64Data, { base64: true });
+      progressCallback(50 + Math.round((i + 1) / total * 45), `Adding image ${i + 1} of ${total}...`);
+    }
+    progressCallback(95, 'Building archive...');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const ext = downloadFormat === 'cbz' ? '.cbz' : '.zip';
+    const mimeType = downloadFormat === 'cbz' ? 'application/vnd.comicbook+zip' : 'application/zip';
+    const blobWithMime = blob.slice(0, blob.size, mimeType);
+    FileSaver.saveAs(blobWithMime, fileName + ext);
+    progressCallback(100, 'Download complete!');
+  };
 
   const downloadUsingBrowser = function ({ fileName, images }) {
     let markup = "";
@@ -150,302 +320,6 @@ import FileSaver from 'file-saver'
 
 
   const downloadUsingJSPdf = async function ({ fileName, images, imagesData }) {
-
-    // Process images using canvas to avoid CORS issues
-    // Images are already loaded in the page, so we can use canvas to convert them
-    const processImagesInContentScript = async (images, progressCallback) => {
-      // Only count checked images for progress tracking
-      const checkedImages = images.filter(img => img.checked);
-      const total = checkedImages.length;
-      let processed = 0;
-      const processedImages = [];
-
-      // Helper to convert image to base64 using canvas (avoids CORS)
-      const imageToBase64 = (imgSrc) => {
-        return new Promise((resolve, reject) => {
-          // Try to find the image element in the DOM first
-          const allImgs = Array.from(document.querySelectorAll('img'));
-          
-          // Try multiple matching strategies
-          let imgElement = null;
-          
-          // Strategy 1: Exact match
-          imgElement = allImgs.find(img => img.src === imgSrc);
-          
-          // Strategy 2: Match by URL without query params
-          if (!imgElement) {
-            try {
-              const targetUrl = new URL(imgSrc);
-              imgElement = allImgs.find(img => {
-                try {
-                  const imgUrl = new URL(img.src);
-                  return imgUrl.origin === targetUrl.origin && 
-                         imgUrl.pathname === targetUrl.pathname;
-                } catch (e) {
-                  return false;
-                }
-              });
-            } catch (e) {
-              // URL parsing failed, skip this strategy
-            }
-          }
-          
-          // Strategy 3: Match by src attribute (before browser resolves it)
-          if (!imgElement) {
-            imgElement = allImgs.find(img => img.getAttribute('src') === imgSrc || 
-                                          img.getAttribute('data-src') === imgSrc);
-          }
-          
-          // Strategy 4: Partial match (one contains the other)
-          if (!imgElement) {
-            imgElement = allImgs.find(img => {
-              const imgSrcClean = img.src.split('?')[0];
-              const targetSrcClean = imgSrc.split('?')[0];
-              return imgSrcClean === targetSrcClean || 
-                     img.src.includes(targetSrcClean) || 
-                     targetSrcClean.includes(imgSrcClean);
-            });
-          }
-          
-          if (imgElement) {
-            // Wait for image to load if not complete
-            if (!imgElement.complete || imgElement.naturalWidth === 0) {
-              const onLoad = () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = imgElement.naturalWidth || imgElement.width;
-                  canvas.height = imgElement.naturalHeight || imgElement.height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(imgElement, 0, 0);
-                  const base64 = canvas.toDataURL('image/jpeg', 0.95);
-                  resolve({ data: base64, mime: 'jpeg' });
-                } catch (error) {
-                  reject(error);
-                }
-              };
-              
-              const onError = () => {
-                reject(new Error('Image failed to load'));
-              };
-              
-              imgElement.addEventListener('load', onLoad, { once: true });
-              imgElement.addEventListener('error', onError, { once: true });
-              
-              // If already loaded but dimensions are 0, try again after a short delay
-              if (imgElement.complete && imgElement.naturalWidth === 0) {
-                setTimeout(() => {
-                  if (imgElement.naturalWidth > 0) {
-                    onLoad();
-                  } else {
-                    onError();
-                  }
-                }, 100);
-              }
-              return;
-            }
-            
-            // Image is loaded, try canvas conversion
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = imgElement.naturalWidth || imgElement.width;
-              canvas.height = imgElement.naturalHeight || imgElement.height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(imgElement, 0, 0);
-              
-              // Convert to base64
-              const base64 = canvas.toDataURL('image/jpeg', 0.95);
-              resolve({ data: base64, mime: 'jpeg' });
-            } catch (error) {
-              // Canvas might be tainted (CORS), reject to use background script
-              console.warn('Canvas conversion failed, will try background script:', error);
-              reject(error);
-            }
-          } else {
-            // Image not in DOM, try to load it with crossOrigin
-            console.log('Content script: Image not in DOM, attempting to load:', imgSrc);
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            
-            const onLoad = () => {
-              try {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth || img.width;
-                canvas.height = img.naturalHeight || img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                const base64 = canvas.toDataURL('image/jpeg', 0.95);
-                resolve({ data: base64, mime: 'jpeg' });
-              } catch (error) {
-                console.warn('Content script: Canvas conversion failed after loading:', error);
-                reject(error);
-              }
-            };
-            
-            const onError = () => {
-              reject(new Error('Failed to load image in content script'));
-            };
-            
-            img.addEventListener('load', onLoad, { once: true });
-            img.addEventListener('error', onError, { once: true });
-            img.src = imgSrc;
-            
-            // Timeout after 5 seconds
-            setTimeout(() => {
-              if (!img.complete) {
-                reject(new Error('Image load timeout'));
-              }
-            }, 5000);
-          }
-        });
-      };
-
-      // Helper to fetch image via background script (bypasses CORS)
-      const fetchImageViaBackground = async (imgSrc) => {
-        return new Promise((resolve, reject) => {
-          console.log('Content script: Requesting image from background script:', imgSrc);
-          
-          // Add timeout
-          const timeout = setTimeout(() => {
-            reject(new Error('Background script request timed out'));
-          }, 30000); // 30 second timeout
-          
-          browser.runtime.sendMessage({
-            method: 'fetchImage',
-            src: imgSrc
-          }).then((response) => {
-            clearTimeout(timeout);
-            console.log('Content script: Received response from background:', response);
-            
-            // Check for Chrome runtime errors
-            if (browser.runtime.lastError) {
-              clearTimeout(timeout);
-              reject(new Error(`Runtime error: ${browser.runtime.lastError.message}`));
-              return;
-            }
-            
-            if (!response) {
-              clearTimeout(timeout);
-              reject(new Error('No response from background script (response was undefined)'));
-              return;
-            }
-            
-            if (response.error) {
-              clearTimeout(timeout);
-              reject(new Error(response.error));
-              return;
-            }
-            
-            if (response.data) {
-              clearTimeout(timeout);
-              resolve({ data: response.data, mime: response.mime || 'jpeg' });
-            } else {
-              clearTimeout(timeout);
-              reject(new Error(`Invalid response from background script: missing data field. Response keys: ${Object.keys(response).join(', ')}`));
-            }
-          }).catch((error) => {
-            clearTimeout(timeout);
-            console.error('Content script: Error sending message to background:', error);
-            reject(error);
-          });
-        });
-      };
-
-      for (let i = 0; i < images.length; i++) {
-        const {src, type, checked, originalSrc} = images[i];
-        
-        // Only process checked images
-        if (!checked) {
-          continue;
-        }
-
-        try {
-          let imageData = null;
-          let mime = null;
-
-          // Use originalSrc for download if available (better quality), otherwise use src
-          const imageSrc = originalSrc || src;
-
-          if (type === 'url' || (type === 'data' && originalSrc)) {
-            // Try canvas method first (for images already in DOM)
-            // Use originalSrc for better quality if available
-            try {
-              const image = await imageToBase64(imageSrc);
-              imageData = image.data;
-              mime = image.mime;
-            } catch (canvasError) {
-              // Canvas failed, use background script to fetch (bypasses CORS)
-              // Use originalSrc for better quality if available
-              try {
-                const image = await fetchImageViaBackground(imageSrc);
-                if (!image || !image.data) {
-                  throw new Error('Invalid image data from background script');
-                }
-                imageData = image.data;
-                mime = image.mime;
-                
-                // Ensure valid mime type
-                if (!mime || mime === 'UNKNOWN' || mime === null) {
-                  const mimeMatch = imageData.match(/data:image\/([^;]+)/);
-                  if (mimeMatch && mimeMatch[1]) {
-                    mime = mimeMatch[1].toLowerCase();
-                    if (mime === 'jpg') mime = 'jpeg';
-                  } else {
-                    mime = 'jpeg';
-                    imageData = imageData.replace(/data:image\/[^;]+/, `data:image/${mime}`);
-                  }
-                }
-              } catch (fetchError) {
-                console.warn(`Skipping image ${i}: Failed to fetch via background script`, fetchError);
-                processed++;
-                if (progressCallback && total > 0) {
-                  const progress = Math.round((processed / total) * 100);
-                  progressCallback(progress, `Processing image ${processed} of ${total}...`);
-                }
-                continue;
-              }
-            }
-          } else {
-            // Data URI - already base64
-            mime = getBase64ImageMime(src);
-            if (!mime || mime === 'UNKNOWN' || mime === null) {
-              const mimeMatch = src.match(/data:image\/([^;]+)/);
-              if (mimeMatch && mimeMatch[1]) {
-                mime = mimeMatch[1].toLowerCase();
-                if (mime === 'jpg') mime = 'jpeg';
-              } else {
-                mime = 'jpeg';
-              }
-            }
-            imageData = src;
-          }
-
-          if (imageData && mime) {
-            processedImages.push({
-              src: imageData,
-              mime: mime,
-              type: type,
-              checked: checked
-            });
-          }
-
-          processed++;
-          if (progressCallback && total > 0) {
-            const progress = Math.round((processed / total) * 100);
-            progressCallback(progress, `Processing image ${processed} of ${total}...`);
-          }
-        } catch (error) {
-          console.error(`Error processing image ${i}:`, error);
-          processed++;
-          if (progressCallback && total > 0) {
-            const progress = Math.round((processed / total) * 100);
-            progressCallback(progress, `Processing image ${processed} of ${total}...`);
-          }
-          // Continue with next image
-        }
-      }
-
-      return processedImages;
-    };
 
     // Helper function to generate PDF from image data
     const generatePDFFromData = (imagesData, progressCallback = null) => {
@@ -642,7 +516,7 @@ import FileSaver from 'file-saver'
 
     if(data.method === 'generatePDF'){
 
-      const {fileName, images, downloadType, imagesData} = data;
+      const {fileName, images, downloadType, downloadFormat, imagesData} = data;
 
       if(downloadType === 'browser'){
         try {
@@ -654,17 +528,30 @@ import FileSaver from 'file-saver'
         }
       }
       if(downloadType === 'jspdf'){
-        // downloadUsingJSPdf now returns a promise
         return downloadUsingJSPdf({ fileName, images, imagesData })
-          .then(() => {
-            return "Pdf downloaded successfully!";
-          })
+          .then(() => "Pdf downloaded successfully!")
           .catch((error) => {
             console.error('Error in jspdf download:', error);
             throw error;
           });
       }
 
+    }
+
+    if(data.method === 'generateArchive'){
+      const { fileName, downloadFormat, images } = data;
+      return downloadAsArchive({ fileName, downloadFormat, images })
+        .then(() => "Archive downloaded successfully!")
+        .catch((error) => {
+          console.error('Error in archive download:', error);
+          browser.runtime.sendMessage({
+            type: 'downloadProgress',
+            progress: 0,
+            text: 'Download failed',
+            error: error.message
+          }).catch(() => {});
+          throw error;
+        });
     }
 
     if(data.method === 'fetchTitle'){

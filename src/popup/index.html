@@ -542,6 +542,22 @@
           #downloading_overlay.show-close #download_overlay_close {
             display: inline-block;
           }
+
+          #download_format_wrapper,
+          #download_type_wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+          #download_format_wrapper label { margin: 0; }
+          #download_format_wrapper select,
+          #download_type_wrapper select { width: 100%; }
+          .download-direct-only-hint {
+            margin: 0;
+            font-size: 11px;
+            color: var(--neutral, #666);
+            line-height: 1.2;
+          }
     </style>
 </head>
 
@@ -590,12 +606,23 @@
           Loading...
 
         </div>
-        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 80px; width: 100%; max-width: 100%; box-sizing: border-box;">
-          <input type="text" id="fileName" placeholder="File name" title="Set the name of the file you want to download as pdf." value="">
-          <select id="downloadType" title="Select a driver to download the pdf">
-            <option value="jspdf">Direct Download</option>
-            <option value="browser">Built-In Browser</option>
-          </select>
+        <div id="downloads_container" style="grid-template-columns: minmax(100px, 1fr) minmax(80px, auto) minmax(100px, 1fr) 80px; width: 100%; max-width: 100%; box-sizing: border-box;">
+          <input type="text" id="fileName" placeholder="File name" title="Set the name of the downloaded file (PDF, CBZ, or ZIP)." value="">
+          <div id="download_format_wrapper">
+            <label for="downloadFormat" style="font-size: 12px; white-space: nowrap;">Download as:</label>
+            <select id="downloadFormat" title="Choose output format: PDF, CBZ, or ZIP">
+              <option value="pdf" selected>PDF</option>
+              <option value="cbz">CBZ</option>
+              <option value="zip">ZIP</option>
+            </select>
+          </div>
+          <div id="download_type_wrapper">
+            <select id="downloadType" title="Select a driver to download (Direct download or Built-in browser for PDF)">
+              <option value="jspdf">Direct Download</option>
+              <option value="browser">Built-In Browser</option>
+            </select>
+            <p id="download_direct_only_hint" class="download-direct-only-hint" style="display: none;">CBZ/ZIP downloads are available via Direct download only.</p>
+          </div>
           <input type="button" id="download" class="accent " disabled="" title="Select some images to download first" value="Download">
         </div>
     </main>
@@ -603,7 +630,7 @@
     <!-- Downloading Overlay -->
     <div id="downloading_overlay">
       <div id="downloading_content">
-        <h3>Downloading PDF...</h3>
+        <h3 id="download_overlay_title">Downloading PDF...</h3>
         <div id="download_progress_bar">
           <div id="download_progress_fill"></div>
         </div>
