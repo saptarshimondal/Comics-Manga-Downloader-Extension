@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.6.0...v1.7.0) (2026-01-30)
+
+
+### Features
+
+* **downloads:** add CBZ and ZIP download support ([3f3ffab](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/3f3ffabc7e5026a94a04425832961ef4cf9978ed))
+
+
+### Bug Fixes
+
+* Download section CSS design fixed. ([6908594](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/69085943e1d90225231f74f820970ebad32eb41a))
+
 ## [1.6.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.5.3...v1.6.0) (2026-01-29)
 
 
