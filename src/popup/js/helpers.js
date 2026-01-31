@@ -148,6 +148,43 @@ export const getOverlayTitleForDownloadFormat = (format) => {
     return f === 'pdf' ? 'Downloading PDF...' : `Downloading ${f.toUpperCase()}...`;
 };
 
+/**
+ * Normalize an image URL for deduplication: trim whitespace, convert relative to absolute.
+ * @param {string} src - Image URL (relative, absolute, or data URI)
+ * @param {string} baseHref - Base URL for resolving relative URLs (e.g. location.href)
+ * @returns {string|null} Normalized absolute URL or data URI, or null if empty/invalid
+ */
+export const normalizeImageUrl = (src, baseHref) => {
+    if (src == null || typeof src !== 'string') return null;
+    const trimmed = src.trim();
+    if (trimmed === '') return null;
+    if (trimmed.startsWith('data:')) return trimmed;
+    try {
+        return new URL(trimmed, baseHref).href;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Deduplicate an array of image URLs by normalized URL (first occurrence wins).
+ * @param {string[]} urls - Array of image URLs (may be relative or absolute)
+ * @param {string} baseHref - Base URL for resolving relative URLs
+ * @returns {string[]} Unique normalized URLs in stable order
+ */
+export const deduplicateImageUrls = (urls, baseHref) => {
+    const seen = new Set();
+    const result = [];
+    for (const u of urls) {
+        const n = normalizeImageUrl(u, baseHref);
+        if (n != null && !seen.has(n)) {
+            seen.add(n);
+            result.push(n);
+        }
+    }
+    return result;
+};
+
 export const getBase64ImageMime = (data) => {
     try {
         if (!data || typeof data !== 'string') {
