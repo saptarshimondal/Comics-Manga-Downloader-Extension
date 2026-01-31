@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.1...v1.7.2) (2026-01-31)
+
+
+### Bug Fixes
+
+* dedupe fetched images by src url to prevent duplicates in image … ([d4db1bf](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/d4db1bf4e409cc9079548fff31e76b22984c0c2d))
+* dedupe fetched images by src url to prevent duplicates in image list ([430fd1b](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/430fd1b3f657a36c0570d507d17a067f8b5d48be))
+
 ## [1.7.1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.0...v1.7.1) (2026-01-30)
 
 
