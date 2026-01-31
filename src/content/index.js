@@ -1,4 +1,4 @@
-import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump } from '../popup/js/helpers';
+import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump, normalizeImageUrl } from '../popup/js/helpers';
 import { getPaddedEntryName, mimeToExtension } from '../popup/js/archiveHelpers';
 import { jsPDF } from 'jspdf';
 import FileSaver from 'file-saver';
@@ -12,24 +12,31 @@ import JSZip from 'jszip';
   window.hasRun = true;
 
   const fetchImages = function () {
-    const imgs = document.querySelectorAll("img"); 
+    const imgs = document.querySelectorAll("img");
 
     const images = [];
+    const seenUrls = new Set(); // Deduplicate by normalized URL (first occurrence wins)
+    const baseHref = typeof location !== 'undefined' ? location.href : '';
     const MAX_DATA_URI_SIZE = 500 * 1024; // 500KB - only convert small images to avoid message size limits
 
     imgs.forEach(function (img, i) {
-      img.dataset.download_id = i;
+      // Normalize img.src for uniqueness (trim, resolve relative to page)
+      const normalizedUrl = normalizeImageUrl(img.src, baseHref);
+      if (normalizedUrl == null || seenUrls.has(normalizedUrl)) return;
+      seenUrls.add(normalizedUrl);
+
+      img.dataset.download_id = images.length;
 
       // Optimization: Get dimensions from already-loaded images
       // This avoids the popup needing to load images just to get dimensions
       let width = 0;
       let height = 0;
-      
+
       if (img.complete && (img.naturalWidth || img.width)) {
         width = img.naturalWidth || img.width;
         height = img.naturalHeight || img.height;
       }
-      
+
       // Try to get image as data URI if it's already loaded, same-origin, and small
       // This avoids re-fetching in the popup for small images
       let imageData = null;
@@ -46,7 +53,7 @@ import JSZip from 'jszip';
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
             imageData = canvas.toDataURL('image/jpeg', 0.85); // Use 0.85 quality for balance
-            
+
             // Check actual size - if too large, don't use data URI
             if (imageData.length > MAX_DATA_URI_SIZE) {
               imageData = null;
@@ -64,8 +71,8 @@ import JSZip from 'jszip';
         'width': width, // Send dimensions so popup doesn't need to load for dimensions
         'height': height,
         'originalSrc': img.src // Always keep original URL for download
-      })
-    })
+      });
+    });
 
     const canvases = document.querySelectorAll('canvas');
     let id = images.length;

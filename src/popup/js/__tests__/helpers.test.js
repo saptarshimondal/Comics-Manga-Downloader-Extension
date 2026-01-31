@@ -1,4 +1,4 @@
-import { sanitizeFileName, getOverlayTitleForDownloadFormat } from '../helpers';
+import { sanitizeFileName, getOverlayTitleForDownloadFormat, normalizeImageUrl, deduplicateImageUrls } from '../helpers';
 
 describe('getOverlayTitleForDownloadFormat', () => {
   it('returns correct overlay label for PDF', () => {
@@ -57,5 +57,49 @@ describe('sanitizeFileName', () => {
 
   it('returns "download" when result would be empty', () => {
     expect(sanitizeFileName('  <>:"/\\|?*  ')).toBe('download');
+  });
+});
+
+describe('normalizeImageUrl', () => {
+  const base = 'https://example.com/page';
+
+  it('returns null for empty or invalid input', () => {
+    expect(normalizeImageUrl('', base)).toBe(null);
+    expect(normalizeImageUrl('   ', base)).toBe(null);
+    expect(normalizeImageUrl(null, base)).toBe(null);
+    expect(normalizeImageUrl(undefined, base)).toBe(null);
+  });
+
+  it('trims whitespace and resolves relative URLs', () => {
+    expect(normalizeImageUrl('  a.jpg  ', base)).toBe('https://example.com/a.jpg');
+    expect(normalizeImageUrl('img/b.jpg', base)).toBe('https://example.com/img/b.jpg');
+  });
+
+  it('returns absolute URLs as-is (normalized)', () => {
+    expect(normalizeImageUrl('https://cdn.example.com/pic.png', base)).toBe('https://cdn.example.com/pic.png');
+  });
+
+  it('returns data URIs trimmed only', () => {
+    const dataUri = 'data:image/jpeg;base64,/9j/4AAQ';
+    expect(normalizeImageUrl(dataUri, base)).toBe(dataUri);
+    expect(normalizeImageUrl('  ' + dataUri + '  ', base)).toBe(dataUri);
+  });
+});
+
+describe('deduplicateImageUrls', () => {
+  const base = 'https://example.com/';
+
+  it('removes duplicate URLs; first occurrence wins', () => {
+    const result = deduplicateImageUrls(['a.jpg', 'a.jpg', 'b.jpg'], base);
+    expect(result).toEqual(['https://example.com/a.jpg', 'https://example.com/b.jpg']);
+  });
+
+  it('preserves order and keeps single occurrence', () => {
+    expect(deduplicateImageUrls(['x.png', 'y.png', 'x.png'], base)).toEqual(['https://example.com/x.png', 'https://example.com/y.png']);
+  });
+
+  it('skips empty/invalid URLs', () => {
+    const result = deduplicateImageUrls(['a.jpg', '', 'a.jpg', '  ', 'b.jpg'], base);
+    expect(result).toEqual(['https://example.com/a.jpg', 'https://example.com/b.jpg']);
   });
 });
