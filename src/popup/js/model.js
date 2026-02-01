@@ -148,6 +148,36 @@ export const saveAppliedFiltersForPage = async (pageUrl, data) => {
 	}
 };
 
+// User's preferred "Download as" format (global; cbz / pdf / zip)
+const PREFERRED_DOWNLOAD_FORMAT_KEY = 'preferredDownloadFormat';
+export const VALID_FORMATS = ['cbz', 'pdf', 'zip'];
+export const DEFAULT_DOWNLOAD_FORMAT = 'cbz';
+
+export const getPreferredDownloadFormat = async () => {
+	try {
+		const storage = getStorage();
+		if (!storage) return DEFAULT_DOWNLOAD_FORMAT;
+		const result = await storage.get(PREFERRED_DOWNLOAD_FORMAT_KEY);
+		const value = result[PREFERRED_DOWNLOAD_FORMAT_KEY];
+		if (value && VALID_FORMATS.includes(value)) return value;
+		return DEFAULT_DOWNLOAD_FORMAT;
+	} catch (error) {
+		console.error('Error getting preferred download format:', error);
+		return DEFAULT_DOWNLOAD_FORMAT;
+	}
+};
+
+export const savePreferredDownloadFormat = async (format) => {
+	if (!format || !VALID_FORMATS.includes(format)) return;
+	try {
+		const storage = getStorage();
+		if (!storage) return;
+		await storage.set({ [PREFERRED_DOWNLOAD_FORMAT_KEY]: format });
+	} catch (error) {
+		console.error('Error saving preferred download format:', error);
+	}
+};
+
 /** Build current applied filter + image selection state for persistence */
 export const buildAppliedFiltersState = () => {
 	const query = getState('query') || '';

@@ -1,4 +1,4 @@
-import { sanitizeFileName, getOverlayTitleForDownloadFormat, normalizeImageUrl, deduplicateImageUrls } from '../helpers';
+import { sanitizeFileName, getOverlayTitleForDownloadFormat, normalizeImageUrl, deduplicateImageUrls, detectImageType, isLikelyHtml } from '../helpers';
 
 describe('getOverlayTitleForDownloadFormat', () => {
   it('returns correct overlay label for PDF', () => {
@@ -101,5 +101,74 @@ describe('deduplicateImageUrls', () => {
   it('skips empty/invalid URLs', () => {
     const result = deduplicateImageUrls(['a.jpg', '', 'a.jpg', '  ', 'b.jpg'], base);
     expect(result).toEqual(['https://example.com/a.jpg', 'https://example.com/b.jpg']);
+  });
+});
+
+describe('detectImageType', () => {
+  it('detects JPEG by magic bytes FF D8 FF', () => {
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0x00, 0x01]);
+    expect(detectImageType(bytes)).toBe('jpeg');
+    expect(detectImageType(bytes.buffer)).toBe('jpeg');
+  });
+
+  it('detects PNG by magic bytes', () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    expect(detectImageType(bytes)).toBe('png');
+  });
+
+  it('detects GIF (GIF87a)', () => {
+    const bytes = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]);
+    expect(detectImageType(bytes)).toBe('gif');
+  });
+
+  it('detects WebP (RIFF....WEBP)', () => {
+    const bytes = new Uint8Array(12);
+    bytes.set([0x52, 0x49, 0x46, 0x46], 0);
+    bytes.set([0x57, 0x45, 0x42, 0x50], 8);
+    expect(detectImageType(bytes)).toBe('webp');
+  });
+
+  it('returns unknown for empty or short buffer', () => {
+    expect(detectImageType(new Uint8Array(0))).toBe('unknown');
+    expect(detectImageType(new Uint8Array([0x00, 0x00]))).toBe('unknown');
+  });
+
+  it('returns unknown for non-image bytes', () => {
+    const bytes = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
+    expect(detectImageType(bytes)).toBe('unknown');
+  });
+
+  it('detects AVIF (ftyp avif)', () => {
+    const bytes = new Uint8Array(12);
+    bytes.set([0x66, 0x74, 0x79, 0x70], 4); // ftyp
+    bytes.set([0x61, 0x76, 0x69, 0x66], 8); // avif
+    expect(detectImageType(bytes)).toBe('avif');
+  });
+});
+
+describe('isLikelyHtml', () => {
+  it('returns true for bytes starting with <!DOCTYPE', () => {
+    const bytes = new Uint8Array([...'<!DOCTYPE html>'].map(c => c.charCodeAt(0)));
+    expect(isLikelyHtml(bytes)).toBe(true);
+  });
+
+  it('returns true for bytes starting with <html', () => {
+    const bytes = new Uint8Array([...'<html lang="en">'].map(c => c.charCodeAt(0)));
+    expect(isLikelyHtml(bytes)).toBe(true);
+  });
+
+  it('returns true for bytes starting with <HTML', () => {
+    const bytes = new Uint8Array([...'<HTML>'].map(c => c.charCodeAt(0)));
+    expect(isLikelyHtml(bytes)).toBe(true);
+  });
+
+  it('returns false for JPEG magic bytes', () => {
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff]);
+    expect(isLikelyHtml(bytes)).toBe(false);
+  });
+
+  it('returns false for PNG magic bytes', () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    expect(isLikelyHtml(bytes)).toBe(false);
   });
 });

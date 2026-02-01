@@ -332,6 +332,8 @@ export const init = async function ({ images, title, pageUrl }) {
 
 	// Restore download state first, before rendering
 	await DownloadView.restoreDownloadState();
+	// Restore user's preferred "Download as" format (CBZ/PDF/ZIP) from storage; skip if dropdown disabled (download in progress)
+	await DownloadView.restorePreferredFormat();
 
 	// Sync URL filter input and dimension filter UI from state
 	const queryInput = document.querySelector('#query');

@@ -185,6 +185,57 @@ export const deduplicateImageUrls = (urls, baseHref) => {
     return result;
 };
 
+/**
+ * Detect image type from magic bytes (not URL or Content-Type).
+ * @param {Uint8Array|ArrayBuffer} bytes
+ * @returns {'jpeg'|'png'|'webp'|'gif'|'avif'|'unknown'}
+ */
+export function detectImageType(bytes) {
+  const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const n = u.length;
+
+  if (n < 3) return 'unknown';
+  // JPEG: FF D8 FF
+  if (u[0] === 0xff && u[1] === 0xd8 && u[2] === 0xff) return 'jpeg';
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (n >= 8 && u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4e && u[3] === 0x47 &&
+      u[4] === 0x0d && u[5] === 0x0a && u[6] === 0x1a && u[7] === 0x0a) return 'png';
+  // GIF: GIF87a or GIF89a
+  if (n >= 6 && u[0] === 0x47 && u[1] === 0x49 && u[2] === 0x46 &&
+      u[3] === 0x38 && (u[4] === 0x37 || u[4] === 0x39) && u[5] === 0x61) return 'gif';
+  // WebP: RIFF....WEBP (bytes 0-3 RIFF, 8-11 WEBP)
+  if (n >= 12 && u[0] === 0x52 && u[1] === 0x49 && u[2] === 0x46 && u[3] === 0x46 &&
+      u[8] === 0x57 && u[9] === 0x45 && u[10] === 0x42 && u[11] === 0x50) return 'webp';
+  // AVIF: ISO BMFF - ftyp at 4, then brand avif/avis at 8
+  if (n >= 12 && u[4] === 0x66 && u[5] === 0x74 && u[6] === 0x79 && u[7] === 0x70) {
+    const brand = String.fromCharCode(u[8], u[9], u[10], u[11]);
+    if (brand === 'avif' || brand === 'avis') return 'avif';
+  }
+  return 'unknown';
+}
+
+/**
+ * Heuristic: response looks like HTML (anti-bot / login / 403 page).
+ * @param {Uint8Array|ArrayBuffer} bytes
+ * @returns {boolean}
+ */
+export function isLikelyHtml(bytes) {
+  const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const n = Math.min(u.length, 512);
+  let start = 0;
+  // Skip BOM
+  if (u.length >= 3 && u[0] === 0xef && u[1] === 0xbb && u[2] === 0xbf) start = 3;
+  for (let i = start; i <= n - 4; i++) {
+    const c = u[i];
+    if (c === 0x3c) { // '<'
+      if (u[i + 1] === 0x21 && u[i + 2] === 0x44 && u[i + 3] === 0x4f) return true; // <!DO
+      if (u[i + 1] === 0x68 && u[i + 2] === 0x74 && u[i + 3] === 0x6d) return true; // <htm
+      if (u[i + 1] === 0x48 && u[i + 2] === 0x54 && u[i + 3] === 0x4d) return true; // <HTM
+    }
+  }
+  return false;
+}
+
 export const getBase64ImageMime = (data) => {
     try {
         if (!data || typeof data !== 'string') {
