@@ -160,19 +160,16 @@ A simple cross browser extension to download comics / manga as CBZ, PDF, or ZIP 
   * **Option 1:** Open the downloaded **.xpi** file with Firefox (double-click or drag it into a Firefox window).
   * **Option 2:** In Firefox, open the Add-ons Manager (`about:addons`), click the gear icon, choose **Install Add-on From File…**, and select the **.xpi** file.
 
-**Alternative: Install from the Release ZIP**
+**Alternative: Install from the Release ZIP (Temporary Add-on)**
 
-If the release provides a packaged add-on as a **.zip** asset (the release ZIP from the release assets, not “Source code (zip)”):
+This method is for testing or development. The add-on is **temporary**—Firefox removes it when you restart the browser.
 
-* Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page, open the latest release, and download the release **.zip** asset (the packaged add-on).
-* Rename the downloaded file from **.zip** to **.xpi** (Firefox treats XPI as a zip archive).
-* Install it in Firefox using one of:
-  * Open the **.xpi** in Firefox (double-click or drag it into a Firefox window).
-  * In Firefox, open the Add-ons Manager (`about:addons`), click the gear icon, choose **Install Add-on From File…**, and select the **.xpi** file.
+* Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page, open the latest release, and download the release **.zip** asset for firefox.
+* Open Firefox and go to `about:debugging#/runtime/this-firefox`.
+* Click **Load Temporary Add-on…**.
+* Select the **.zip** file.
 
-If the release asset is already **.xpi**, use that directly and follow the primary steps above.
-
-The **.xpi** is signed (from AMO approval) so it should install normally. To update, install the newest **.xpi** (or renamed release ZIP) from the latest GitHub Release.
+The **.xpi** is signed (from AMO approval) so it should install normally. To update, install the newest **.xpi** from the latest GitHub Release.
 
 #### Google Chrome
 
