@@ -1,151 +1,158 @@
-const path = require('path');
-const fs = require('fs');
-const webpack = require('webpack');
-const DIST_DIR = path.resolve(__dirname, 'dist');
-const SRC_DIR = path.resolve(__dirname, 'src');
-const ASSET_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2'];
-const MANIFEST_FILE = 'manifest.json';
+const path = require("path");
+const fs = require("fs");
+const webpack = require("webpack");
 
-const manifestPath = path.join(SRC_DIR, MANIFEST_FILE);
-
-const CleanWebpackPlugin = require("clean-webpack-plugin").CleanWebpackPlugin;
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-// const WriteFilePlugin = require("write-file-webpack-plugin");
 
-const package = require('./package');
+const DIST_DIR = path.resolve(__dirname, "dist");
+const SRC_DIR = path.resolve(__dirname, "src");
 
-const options = {
-	mode: "development",
+const ASSET_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "eot",
+  "otf",
+  "svg",
+  "ttf",
+  "woff",
+  "woff2",
+];
+
+const pkg = require("./package.json");
+const isProd = process.env.NODE_ENV === "production";
+
+module.exports = {
+  mode: isProd ? "production" : "development",
   performance: {
     hints: false,
     maxAssetSize: 512000,
-    maxEntrypointSize: 512000
+    maxEntrypointSize: 512000,
   },
-  devtool: 'cheap-module-source-map', // to fix EvalError
-	entry: {
+  devtool: isProd ? "source-map" : "cheap-module-source-map",
+
+  entry: {
     popup: path.join(SRC_DIR, "popup", "js", "index.js"),
-    // options: path.join(SRC_DIR, "options", "index.js"),
     background: path.join(SRC_DIR, "background", "index.js"),
-    content: path.join(SRC_DIR, "content", "index.js")
+    content: path.join(SRC_DIR, "content", "index.js"),
   },
+
   output: {
     path: DIST_DIR,
     filename: "[name].bundle.js",
-    publicPath: "/",
+    // Extensions should use relative paths
+    publicPath: "",
+    // Avoid global-object shims that can trigger eval-like patterns
+    globalObject: "globalThis",
   },
+
+  optimization: {
+    splitChunks: false,
+    runtimeChunk: false,
+  },
+
   module: {
     rules: [
-      /*{
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"],
-        exclude: /node_modules/
-      },*/
       {
-        test: new RegExp('.(' + ASSET_EXTENSIONS.join('|') + ')$'),
-        type: 'asset/resource',
-        exclude: /node_modules/
+        test: new RegExp(`\\.(${ASSET_EXTENSIONS.join("|")})$`),
+        type: "asset/resource",
+        exclude: /node_modules/,
       },
       {
         test: /\.html$/,
         use: ["html-loader"],
-        exclude: /node_modules/
+        exclude: /node_modules/,
       },
       {
         test: /\.(js)$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader'
-        }
+          loader: "babel-loader",
+        },
       },
-    ]
+    ],
   },
+
   plugins: [
-  	// clean the dist folder
     new CleanWebpackPlugin({
-      cleanStaleWebpackAssets: false
+      cleanStaleWebpackAssets: false,
     }),
-    new CopyWebpackPlugin(
-	    {
-	    	patterns: [
-	    		{
-	      		from: "src/manifest.json",
-			      transform: function (content, path) {
-			        // generates the manifest file using the package.json informations
-			        const manifest = JSON.parse(content.toString())
-			        manifest.name = package.displayName || package.name;
-			        manifest.version = package.version;
-			        manifest.description = package.description;
-			        manifest.author = package.author;
-			        
-			        // Firefox compatibility: Firefox doesn't fully support service_worker in V3 yet
-			        // Convert service_worker to scripts for Firefox compatibility
-			        // Chrome will still work with scripts in V3 (though service_worker is preferred)
-			        if (manifest.background && manifest.background.service_worker) {
-			          manifest.background.scripts = [manifest.background.service_worker];
-			          delete manifest.background.service_worker;
-			        }
-			        
-			        return Buffer.from(JSON.stringify(manifest, null, 2))
-			      },
-	    		}
-	    	]
-	    }
-    ),
+
+    // Build Firefox-specific manifest from manifest.base.json
     new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/icon",
-    		to: "icon"
-    	}]
+      patterns: [
+        {
+          from: "src/manifest.base.json",
+          to: "manifest.json",
+          transform(content) {
+            const manifest = JSON.parse(content.toString());
+
+            // Fill from package.json
+            manifest.name = pkg.displayName || pkg.name;
+            manifest.version = pkg.version;
+            manifest.description = pkg.description;
+            manifest.author = pkg.author;
+
+            // Firefox MV3 AMO requirements
+            manifest.browser_specific_settings = {
+              gecko: {
+                id: "comics-manga-downloader@saptarshimondal",
+                strict_min_version: "140.0",
+                data_collection_permissions: {
+                  required: ["none"],
+                },
+              },
+            };
+
+            // web-ext lint / AMO currently rejects service_worker in your setup:
+            // Convert background.service_worker -> background.scripts
+            if (manifest.background?.service_worker) {
+              manifest.background = {
+                scripts: [manifest.background.service_worker],
+              };
+            }
+
+            return Buffer.from(JSON.stringify(manifest, null, 2));
+          },
+        },
+      ],
     }),
+
+    // Static assets
     new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/popup/icon",
-    		to: "popup/icon"
-    	}]
+      patterns: [
+        { from: "src/icon", to: "icon" },
+        { from: "src/popup/icon", to: "popup/icon" },
+        { from: "src/popup/css", to: "css" },
+        { from: "src/popup/images", to: "images" },
+      ],
     }),
-    new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/popup/css",
-    		to: "css"
-    	}]
-    }),
-    new CopyWebpackPlugin({
-    	patterns: [{
-    		from: "src/popup/images",
-    		to: "images"
-    	}]
-    }),
+
+    // Popup HTML
     new HtmlWebpackPlugin({
-      templateContent: fs.readFileSync(path.join(SRC_DIR, "popup", "index.html"), "utf8"),
+      templateContent: fs.readFileSync(
+        path.join(SRC_DIR, "popup", "index.html"),
+        "utf8"
+      ),
       filename: "popup.html",
       chunks: ["popup"],
       inject: "body",
       scriptLoading: "blocking",
-      publicPath: "./"
-    }),
-    /*new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "options", "index.html"),
-      filename: "options.html",
-      chunks: ["options"]
-    }),*/
-    /*new HtmlWebpackPlugin({
-      template: path.join(SRC_DIR, "background.html"),
-      filename: "background.html",
-      chunks: ["background"]
-    }),*/
-    // new WriteFilePlugin(),
-    new webpack.ProvidePlugin({
-      browser: 'webextension-polyfill'
+      publicPath: "./",
     }),
 
+    // Provide webextension-polyfill as `browser`
+    new webpack.ProvidePlugin({
+      browser: "webextension-polyfill",
+    }),
   ],
+
   externals: {
-    // only define the dependencies you are NOT using as externals!
     canvg: "canvg",
     html2canvas: "html2canvas",
-    dompurify: "dompurify"
-  }
+    dompurify: "dompurify",
+  },
 };
-
-module.exports = options;
