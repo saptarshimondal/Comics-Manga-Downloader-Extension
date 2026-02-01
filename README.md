@@ -69,8 +69,8 @@
       <ul>
       	<li><a href="#installation">Installation</a>
       		<ul>
-      			<li><a href="#google-chrome">Google Chrome</a></li>
       			<li><a href="#firefox">Firefox</a></li>
+      			<li><a href="#google-chrome">Google Chrome</a></li>
       		</ul>
       	</li>
         <li><a href="#development-setup">Development Setup</a>
@@ -152,30 +152,42 @@ A simple cross browser extension to download comics / manga as CBZ, PDF, or ZIP 
 
 ### Installation
 
-* Visit [releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page
-* Download the binary file from the latest release.
-[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
-* Unzip the downloaded file
+#### Firefox
+
+* Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page on GitHub.
+* Open the latest release and download the **.xpi** asset.
+* Install the extension in Firefox using one of:
+  * **Option 1:** Open the downloaded **.xpi** file with Firefox (double-click or drag it into a Firefox window).
+  * **Option 2:** In Firefox, open the Add-ons Manager (`about:addons`), click the gear icon, choose **Install Add-on From File…**, and select the **.xpi** file.
+
+**Alternative: Install from the Release ZIP**
+
+If the release provides a packaged add-on as a **.zip** asset (the release ZIP from the release assets, not “Source code (zip)”):
+
+* Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page, open the latest release, and download the release **.zip** asset (the packaged add-on).
+* Rename the downloaded file from **.zip** to **.xpi** (Firefox treats XPI as a zip archive).
+* Install it in Firefox using one of:
+  * Open the **.xpi** in Firefox (double-click or drag it into a Firefox window).
+  * In Firefox, open the Add-ons Manager (`about:addons`), click the gear icon, choose **Install Add-on From File…**, and select the **.xpi** file.
+
+If the release asset is already **.xpi**, use that directly and follow the primary steps above.
+
+The **.xpi** is signed (from AMO approval) so it should install normally. To update, install the newest **.xpi** (or renamed release ZIP) from the latest GitHub Release.
 
 #### Google Chrome
 
-* Open Google chrome and visit - `chrome://extensions` page
-* Turn on "Developer mode"
-* Click on "Load Unpacked" and select the unzipped folder. 
+* Visit the [releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page.
+* Download the binary file from the latest release.
+[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
+* Unzip the downloaded file.
+* Open Google Chrome and visit the `chrome://extensions` page.
+* Turn on **Developer mode**.
+* Click **Load unpacked** and select the unzipped folder.
 
 [![Installation Chrome Screen Shot][installation-chrome-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
 
-* To pin the extension on tool bar click on extensions icon and then click on pin icon next to the extension
+* To pin the extension on the toolbar, click the extensions icon and then click the pin icon next to the extension.
 [![Pin Chrome Screen Shot][pin-chrome-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
-
-
-#### Firefox
-
-* Open Firefox and visit - `about:debugging#/runtime/this-firefox` page
-* Click on "Load Temporary Add-on..." button
-* Select **"manifest.json"** file inside of the unzipped folder.
-
-_Please note that firefox will remove the extension if you restart the browser_
 
 
 ### Development Setup
