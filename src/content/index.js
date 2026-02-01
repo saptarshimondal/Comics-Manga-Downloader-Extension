@@ -1,4 +1,4 @@
-import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump, normalizeImageUrl } from '../popup/js/helpers';
+import { srcType, getBase64Image, calculateAspectRatioFit, getBase64ImageMime, dump, normalizeImageUrl, detectImageType, isLikelyHtml } from '../popup/js/helpers';
 import { getPaddedEntryName, mimeToExtension } from '../popup/js/archiveHelpers';
 import { jsPDF } from 'jspdf';
 import FileSaver from 'file-saver';
@@ -167,15 +167,18 @@ import JSZip from 'jszip';
     });
   };
 
-  const fetchImageViaBackground = (imgSrc) => {
+  const fetchImageViaBackground = (imgSrc, index) => {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Background script request timed out')), 30000);
-      browser.runtime.sendMessage({ method: 'fetchImage', src: imgSrc })
+      const timeout = setTimeout(() => reject(new Error('Background script request timed out')), 35000);
+      browser.runtime.sendMessage({ method: 'fetchImage', src: imgSrc, index })
         .then((response) => {
           clearTimeout(timeout);
           if (browser.runtime.lastError) { reject(new Error(browser.runtime.lastError.message)); return; }
           if (!response) { reject(new Error('No response from background script')); return; }
-          if (response.error) { reject(new Error(response.error)); return; }
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
           if (response.data) resolve({ data: response.data, mime: response.mime || 'jpeg' });
           else reject(new Error('Invalid response from background script'));
         })
@@ -188,6 +191,7 @@ import JSZip from 'jszip';
     const total = checkedImages.length;
     let processed = 0;
     const processedImages = [];
+    const failedUrls = [];
     for (let i = 0; i < images.length; i++) {
       const { src, type, checked, originalSrc } = images[i];
       if (!checked) continue;
@@ -202,7 +206,7 @@ import JSZip from 'jszip';
             mime = image.mime;
           } catch (canvasError) {
             try {
-              const image = await fetchImageViaBackground(imageSrc);
+              const image = await fetchImageViaBackground(imageSrc, processed);
               if (!image || !image.data) throw new Error('Invalid image data');
               imageData = image.data;
               mime = image.mime || 'jpeg';
@@ -211,6 +215,7 @@ import JSZip from 'jszip';
                 mime = m ? (m[1].toLowerCase() === 'jpg' ? 'jpeg' : m[1].toLowerCase()) : 'jpeg';
               }
             } catch (fetchError) {
+              failedUrls.push({ index: processed + 1, url: imageSrc, reason: fetchError.message });
               processed++;
               if (progressCallback && total > 0) progressCallback(Math.round((processed / total) * 100), `Processing image ${processed} of ${total}...`);
               continue;
@@ -222,7 +227,7 @@ import JSZip from 'jszip';
           imageData = src;
         }
         if (imageData && mime) {
-          processedImages.push({ src: imageData, mime, type, checked, index: processedImages.length });
+          processedImages.push({ src: imageData, mime, type, checked, index: processedImages.length, originalUrl: imageSrc });
         }
         processed++;
         if (progressCallback && total > 0) progressCallback(Math.round((processed / total) * 100), `Processing image ${processed} of ${total}...`);
@@ -241,7 +246,10 @@ import JSZip from 'jszip';
     progressCallback(5, 'Starting image processing...');
     const processedImages = await processImagesInContentScript(images, progressCallback);
     if (!processedImages || processedImages.length === 0) {
-      throw new Error('No valid images to download. Some images may have unsupported formats.');
+      const failedInfo = failedUrls.length > 0
+        ? ` Failed fetches: ${failedUrls.map(f => `#${f.index} (${f.reason})`).join('; ')}.`
+        : '';
+      throw new Error(`No valid images to download. Some images may have unsupported formats.${failedInfo}`);
     }
     const total = processedImages.length;
     const zip = new JSZip();
@@ -326,49 +334,98 @@ import JSZip from 'jszip';
   }
 
 
+  /**
+   * Ensure image is in a format jsPDF addImage supports (jpeg or png).
+   * Uses magic-byte detection; converts webp/avif/gif/unknown via canvas to PNG if decodable.
+   * @param {{ src: string, mime?: string, originalUrl?: string }} img - data URL and optional URL for errors
+   * @returns {{ src: string, mime: 'jpeg'|'png' }} - normalized data URL and type for addImage
+   */
+  const ensureSupportedForPdf = async (img) => {
+    const dataUrl = img.src;
+    const urlForError = img.originalUrl || '(data URI)';
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      throw new Error(`Image is not a data URL: ${urlForError}`);
+    }
+    const base64 = dataUrl.indexOf(';base64,') >= 0 ? dataUrl.split(';base64,')[1] : dataUrl.replace(/^data:[^,]+,/, '');
+    if (!base64) {
+      throw new Error(`Image data URL has no base64 payload: ${urlForError}`);
+    }
+    let bytes;
+    try {
+      const binary = atob(base64);
+      bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    } catch (e) {
+      throw new Error(`Image base64 decode failed: ${urlForError}`);
+    }
+    if (bytes.length === 0) {
+      throw new Error(`Image response is empty (0 bytes): ${urlForError}`);
+    }
+    if (isLikelyHtml(bytes)) {
+      const hexSnippet = Array.from(bytes.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      throw new Error(`Image response is not a valid image (detected: text/html or challenge page). URL: ${urlForError}. First bytes (hex): ${hexSnippet}`);
+    }
+    const detectedType = detectImageType(bytes);
+    if (detectedType === 'jpeg' || detectedType === 'png') {
+      const prefix = detectedType === 'jpeg' ? 'data:image/jpeg;base64,' : 'data:image/png;base64,';
+      const normalized = dataUrl.replace(/^data:image\/[^;]+;base64,/, prefix);
+      return { src: normalized, mime: detectedType };
+    }
+    // webp / gif / avif / unknown: decode and convert to PNG via canvas
+    const mimeForBlob = detectedType !== 'unknown' ? `image/${detectedType}` : 'image/png';
+    const blob = new Blob([bytes], { type: mimeForBlob });
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const pngDataUrl = canvas.toDataURL('image/png');
+      return { src: pngDataUrl, mime: 'png' };
+    } catch (decodeErr) {
+      const snippet = Array.from(bytes.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      throw new Error(`Image response is not a valid image (detected: ${detectedType}, decode failed). URL: ${urlForError}. First bytes (hex): ${snippet}. ${decodeErr.message || ''}`);
+    }
+  };
+
   const downloadUsingJSPdf = async function ({ fileName, images, imagesData }) {
 
     // Helper function to generate PDF from image data
-    const generatePDFFromData = (imagesData, progressCallback = null) => {
+    const generatePDFFromData = async (imagesData, progressCallback = null) => {
       if (!imagesData || imagesData.length === 0) {
         throw new Error('No image data provided for PDF generation');
       }
       const doc = new jsPDF("p", "mm", "a4");
 
-      let imgProps = undefined,
-          maxWidth = doc.internal.pageSize.getWidth(),
-          maxHeight = doc.internal.pageSize.getHeight(),
-          aspectRatio = undefined,
-          marginX = 0,
-          marginY = 0;
+      const maxWidth = doc.internal.pageSize.getWidth();
+      const maxHeight = doc.internal.pageSize.getHeight();
 
-      const updatedDoc = imagesData.reduce((doc, img, index) => {
-        // Send progress update for each image added
-        if (progressCallback) {
-          progressCallback(index + 1, imagesData.length);
+      for (let index = 0; index < imagesData.length; index++) {
+        const img = imagesData[index];
+        if (progressCallback) progressCallback(index + 1, imagesData.length);
+        if (!img.src || img.src === null) {
+          console.warn(`Skipping image ${index}: no src`);
+          continue;
         }
-        // Skip images with null src or invalid mime types
-        if(!img.src || img.src === null || !img.mime || img.mime === 'UNKNOWN') {
-          console.warn(`Skipping image ${index}: invalid src or mime type`, {
-            hasSrc: !!img.src,
-            mime: img.mime
-          });
-          return doc;
-        }
-        
+        let normalized;
         try {
-          imgProps = doc.getImageProperties(img.src);
-          
-          // Validate that we got valid image properties
+          normalized = await ensureSupportedForPdf(img);
+        } catch (err) {
+          const url = img.originalUrl || '(unknown URL)';
+          console.error(`Error normalizing image ${index} for PDF:`, err, { index, url, mime: img.mime });
+          if (index === 0) throw new Error(`Failed to add first image to PDF: ${err.message}`);
+          continue;
+        }
+        try {
+          const imgProps = doc.getImageProperties(normalized.src);
           if (!imgProps || !imgProps.width || !imgProps.height) {
-            console.warn(`Skipping image ${index}: invalid image properties`, {
-              imgProps: imgProps
-            });
-            return doc;
+            console.warn(`Skipping image ${index}: invalid image properties`, { imgProps });
+            continue;
           }
-          
-          aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight);
-
+          const aspectRatio = calculateAspectRatioFit(imgProps.width, imgProps.height, maxWidth, maxHeight);
+          let marginX = 0, marginY = 0;
           if(Math.round(aspectRatio.width) < Math.round(maxWidth)){
             marginX = (maxWidth - aspectRatio.width) / 2;
           }
@@ -384,25 +441,16 @@ import JSZip from 'jszip';
           }
 
           // Use the mime type from the image data, with fallback
-          const mimeType = img.mime || 'jpeg'; // Default to jpeg if mime is missing
-          doc.addImage(img.src, mimeType, marginX, marginY, aspectRatio.width, aspectRatio.height);
+          doc.addImage(normalized.src, normalized.mime, marginX, marginY, aspectRatio.width, aspectRatio.height);
           if(index !== imagesData.length - 1) doc.addPage();
         } catch (error) {
-          console.error(`Error adding image ${index} to PDF:`, error);
-          console.error(`Image data:`, {
-            hasSrc: !!img.src,
-            mime: img.mime,
-            srcPreview: img.src ? img.src.substring(0, 50) + '...' : 'null'
-          });
-          // If this is the first image and it fails, throw the error
-          // Otherwise, continue with next image
-          if (index === 0) {
-            throw new Error(`Failed to add first image to PDF: ${error.message}`);
-          }
+          const url = img.originalUrl || '(unknown URL)';
+          console.error(`Error adding image ${index} to PDF:`, error, { url, mime: normalized.mime });
+          if (index === 0) throw new Error(`Failed to add first image to PDF: ${error.message}`);
         }
 
-        return doc;
-      }, doc);
+      }
+      const updatedDoc = doc;
 
       // Hack for firefox user to forcefully downloading the file from blob
       // https://github.com/parallax/jsPDF/issues/3391#issuecomment-1133782322 
@@ -461,7 +509,7 @@ import JSZip from 'jszip';
           progressCallback(pdfProgress, `Adding image ${current} of ${total} to PDF...`);
         };
         
-        generatePDFFromData(processedImages, pdfProgressCallback);
+        await generatePDFFromData(processedImages, pdfProgressCallback);
         console.log('PDF generation completed successfully');
         
         // Send 95% - PDF generated, waiting for download to start

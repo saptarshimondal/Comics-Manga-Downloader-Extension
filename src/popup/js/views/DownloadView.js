@@ -1,5 +1,5 @@
 import View from './View';
-import { getState, saveDownloadState, getDownloadState, clearDownloadState } from '../model';
+import { getState, saveDownloadState, getDownloadState, clearDownloadState, getPreferredDownloadFormat, savePreferredDownloadFormat } from '../model';
 import { sanitizeFileName, getOverlayTitleForDownloadFormat } from '../helpers';
 
 const getCurrentTabId = () => getState('currentTabId');
@@ -35,13 +35,15 @@ class DownloadView extends View {
 		// Always set up progress listener immediately, even if not downloading
 		this._setupProgressListener();
 
-		// When format changes, show/hide download type and direct-only hint
+		// When format changes, persist immediately and show/hide download type
 		if (this._downloadFormat) {
-			this._downloadFormat.addEventListener('change', () => this._applyFormatUi());
-			// Initial apply (in case restored from state)
+			this._downloadFormat.addEventListener('change', () => {
+				const format = this._getDownloadFormat();
+				savePreferredDownloadFormat(format).catch(() => {});
+				this._applyFormatUi();
+			});
 			setTimeout(() => this._applyFormatUi(), 0);
 		}
-
 		// Save state when popup is about to close (per-tab) – only if download still in progress (not completed/errored)
 		window.addEventListener('beforeunload', () => {
 			if (this._isDownloading && !this._downloadComplete) {
@@ -52,11 +54,23 @@ class DownloadView extends View {
 						progress: this._progressFill ? parseInt(this._progressFill.style.width) || 0 : 0,
 						progressText: this._progressText ? this._progressText.textContent || '' : '',
 						downloadComplete: false,
-						downloadFormat: this._activeDownloadFormat || 'pdf'
+						downloadFormat: this._activeDownloadFormat || 'cbz'
 					}).catch(err => console.error('Error saving state on close:', err));
 				}
 			}
 		});
+	}
+
+	/**
+	 * Load preferred "Download as" format from storage and set the dropdown.
+	 * Only updates the dropdown when it is not disabled (i.e. no download in progress).
+	 * Invalid stored values fall back to CBZ. Call once on popup open after restoreDownloadState.
+	 */
+	async restorePreferredFormat() {
+		if (!this._downloadFormat || this._downloadFormat.disabled) return;
+		const format = await getPreferredDownloadFormat();
+		this._downloadFormat.value = format;
+		this._applyFormatUi();
 	}
 
 	_showOverlayCloseButton() {
@@ -68,7 +82,7 @@ class DownloadView extends View {
 	}
 
 	_getDownloadFormat() {
-		return (this._downloadFormat && this._downloadFormat.value) ? this._downloadFormat.value : 'pdf';
+		return (this._downloadFormat && this._downloadFormat.value) ? this._downloadFormat.value : 'cbz';
 	}
 
 	_applyFormatUi() {
@@ -128,7 +142,7 @@ class DownloadView extends View {
 				}
 				
 				// Restore active download format so overlay label and dropdown match the actual download type
-				const savedFormat = (savedState.downloadFormat && ['pdf', 'cbz', 'zip'].includes(savedState.downloadFormat)) ? savedState.downloadFormat : 'pdf';
+				const savedFormat = (savedState.downloadFormat && ['pdf', 'cbz', 'zip'].includes(savedState.downloadFormat)) ? savedState.downloadFormat : 'cbz';
 				this._activeDownloadFormat = savedFormat;
 				if (this._overlayTitle) {
 					this._overlayTitle.textContent = getOverlayTitleForDownloadFormat(savedFormat);
@@ -466,7 +480,7 @@ class DownloadView extends View {
 		if (percentage >= 100) return;
 		const tabId = getCurrentTabId();
 		if (tabId == null) return;
-		const formatToSave = this._activeDownloadFormat || 'pdf';
+		const formatToSave = this._activeDownloadFormat || 'cbz';
 		if (this._isDownloading) {
 			saveDownloadState(tabId, {
 				isDownloading: true,

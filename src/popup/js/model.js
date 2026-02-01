@@ -7,7 +7,7 @@ const state = {
 		{ 'filteredImages': [] },
 		{ 'query': '' },
 		{ 'imageDimensions': {} }, // Store dimensions by image key (src|type): { 'url1|url': '100x200', 'data1|data': '500x500', ... }
-		{ 'selectedDimensionFilters': [] } // Currently selected dimension filters (array for multiple selection)
+		{ 'selectedDimensionFilters': [] }, // Currently selected dimension filters (array for multiple selection)
 	]
 };
 
@@ -16,7 +16,7 @@ export const setState = (key, value) => {
 };
 
 export const getState = (key) => {
-	return state.data[key] ? state.data[key] : null;
+	return Object.prototype.hasOwnProperty.call(state.data, key) ? state.data[key] : null;
 };
 
 
@@ -148,15 +148,46 @@ export const saveAppliedFiltersForPage = async (pageUrl, data) => {
 	}
 };
 
+// User's preferred "Download as" format (global; cbz / pdf / zip)
+const PREFERRED_DOWNLOAD_FORMAT_KEY = 'preferredDownloadFormat';
+export const VALID_FORMATS = ['cbz', 'pdf', 'zip'];
+export const DEFAULT_DOWNLOAD_FORMAT = 'cbz';
+
+export const getPreferredDownloadFormat = async () => {
+	try {
+		const storage = getStorage();
+		if (!storage) return DEFAULT_DOWNLOAD_FORMAT;
+		const result = await storage.get(PREFERRED_DOWNLOAD_FORMAT_KEY);
+		const value = result[PREFERRED_DOWNLOAD_FORMAT_KEY];
+		if (value && VALID_FORMATS.includes(value)) return value;
+		return DEFAULT_DOWNLOAD_FORMAT;
+	} catch (error) {
+		console.error('Error getting preferred download format:', error);
+		return DEFAULT_DOWNLOAD_FORMAT;
+	}
+};
+
+export const savePreferredDownloadFormat = async (format) => {
+	if (!format || !VALID_FORMATS.includes(format)) return;
+	try {
+		const storage = getStorage();
+		if (!storage) return;
+		await storage.set({ [PREFERRED_DOWNLOAD_FORMAT_KEY]: format });
+	} catch (error) {
+		console.error('Error saving preferred download format:', error);
+	}
+};
+
 /** Build current applied filter + image selection state for persistence */
 export const buildAppliedFiltersState = () => {
 	const query = getState('query') || '';
 	const selectedDimensionFilters = getState('selectedDimensionFilters') || [];
+	const autoDetectEnabled = getState('autoDetectEnabled');
 	const filteredImages = getState('filteredImages') || [];
 	const imageSelection = {};
 	filteredImages.forEach((img) => {
 		const key = `${img.src}|${img.type || (img.src.startsWith('data') ? 'data' : 'url')}`;
 		imageSelection[key] = !!img.checked;
 	});
-	return { query, selectedDimensionFilters, imageSelection };
+	return { query, selectedDimensionFilters, imageSelection, autoDetectEnabled };
 };

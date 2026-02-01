@@ -1,5 +1,5 @@
-import { getBase64Image, getBase64ImageMime } from '../popup/js/helpers';
-
+import { getBase64ImageMime } from '../popup/js/helpers';
+import { fetchImageWithRetry, DEFAULT_TIMEOUT_MS, DEFAULT_MAX_ATTEMPTS } from './imageFetch.js';
 
 const getImagesData = async (images, progressCallback) => {
   let image = undefined,
@@ -19,7 +19,7 @@ const getImagesData = async (images, progressCallback) => {
         return null;
       }
       
-      image = await getBase64Image(src)
+      image = await fetchImageInBackground(src)
       
       // Ensure we have valid image data
       if (!image || !image.data) {
@@ -97,65 +97,36 @@ const getImagesData = async (images, progressCallback) => {
 }
 
 
-// Helper function for background script to fetch images (can bypass CORS)
-const fetchImageInBackground = async (srcUrl) => {
-  try {
-    // Background scripts can make cross-origin requests
-    // Try without CORS mode first (background scripts have special privileges)
-    let response = await fetch(srcUrl, {
-      method: "GET",
-      cache: "default"
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    let arrayBuffer = await response.arrayBuffer();
-    let bytes = [].slice.call(new Uint8Array(arrayBuffer));
-    
-    if (!bytes.length) {
-      return {
-        "mime": null, 
-        "data": null
-      };
-    }
-    
-    // Determine format from bytes
-    const formats = {
-      png: "iVBORw0KGgo=",
-      jpeg: "/9g=",
-      gif: "R0lG",
-      "svg+xml": "PA=="
-    };
-    const defaultFormat = "jpeg";
-    
-    const bytesToBase64 = (byteArray) =>
-      btoa(byteArray.reduce((a, e) => a + String.fromCharCode(e), ""));
-    
-    const getFormat = (byteArray) => {
-      for (let format in formats) {
-        let header = formats[format];
-        if (bytesToBase64(byteArray.slice(0, atob(header).length)) == header) {
-          return format;
-        }
-      }
-      return defaultFormat;
-    };
-    
-    const format = getFormat(bytes);
-    const mime = format && format !== 'UNKNOWN' ? format : 'jpeg';
-    let base64 = `data:image/${mime};base64,` + bytesToBase64(bytes);
-    
-    return {
-      "mime": mime, 
-      "data": base64
-    };
-  } catch (error) {
-    console.error('Background script: Error fetching image:', error);
-    throw error;
-  }
+// Single fetch path: robust fetch with retry, timeout, and validation (non-empty + signature).
+// Only returns when body is non-empty and passes validation; logs success only then.
+const fetchImageInBackground = async (srcUrl, opts = {}) => {
+  return fetchImageWithRetry(srcUrl, {
+    timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    maxAttempts: opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+    signal: opts.signal
+  });
 };
+
+// Concurrency cap for fetchImage message handlers (avoids CDN throttling / partial responses)
+const MAX_CONCURRENT_FETCHES = 6;
+let activeFetches = 0;
+const fetchQueue = [];
+
+function runWithConcurrencyLimit(fn) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      activeFetches++;
+      fn()
+        .then(resolve, reject)
+        .finally(() => {
+          activeFetches--;
+          if (fetchQueue.length > 0) fetchQueue.shift()();
+        });
+    };
+    if (activeFetches < MAX_CONCURRENT_FETCHES) run();
+    else fetchQueue.push(run);
+  });
+}
 
 const DOWNLOAD_STATE_BY_TAB_KEY = 'downloadStateByTab';
 
@@ -191,7 +162,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.method === 'fetchImage') {
-    // Return true to indicate we will send a response asynchronously
+    const url = message.src;
+    const index = message.index;
     (async () => {
       let responseSent = false;
       const safeSendResponse = (response) => {
@@ -204,18 +176,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         }
       };
-      
+
       try {
-        console.log('Background script: Fetching image', message.src);
-        const image = await fetchImageInBackground(message.src);
-        
+        const image = await runWithConcurrencyLimit(() => fetchImageInBackground(url));
         if (!image || !image.data) {
-          console.error('Background script: Invalid image data');
-          safeSendResponse({ error: 'Invalid image data' });
+          safeSendResponse({ error: 'Invalid image data', errorDetail: { url, index } });
           return;
         }
-        
-        // Ensure valid mime type
         let mime = image.mime;
         if (!mime || mime === 'UNKNOWN' || mime === null) {
           const mimeMatch = image.data.match(/data:image\/([^;]+)/);
@@ -227,16 +194,22 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             image.data = image.data.replace(/data:image\/[^;]+/, `data:image/${mime}`);
           }
         }
-        
         console.log('Background script: Image fetched successfully, mime:', mime);
         safeSendResponse({ data: image.data, mime: mime });
       } catch (error) {
-        console.error('Background script: Error fetching image:', error);
-        safeSendResponse({ error: error.message || 'Failed to fetch image' });
+        const detail = error.detail || {};
+        const indexLabel = index != null ? `image ${index + 1}` : 'image';
+        const sizeInfo = detail.byteLength != null ? ` (${detail.byteLength} bytes)` : '';
+        const attemptInfo = detail.attempt != null ? ` after ${detail.attempt} attempt(s)` : '';
+        const errMsg = `${indexLabel}: ${error.message}${sizeInfo}${attemptInfo}`;
+        console.error('Background script: Error fetching image', url, error.message, detail);
+        safeSendResponse({
+          error: errMsg,
+          errorDetail: { url, index, byteLength: detail.byteLength, attempt: detail.attempt, reason: detail.reason }
+        });
       }
     })();
-    
-    return true; // Keep the message channel open for async response
+    return true;
   }
   // Return false if we don't handle the message
   return false;

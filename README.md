@@ -36,7 +36,7 @@
   <h3 align="center">Comics / Manga Downloader Extension</h3>
 
   <p align="center">
-    A cross browser extension to download comics / manga as PDF, CBZ, or ZIP from any site!
+    A cross browser extension to download comics / manga as CBZ, PDF, or ZIP from any site!
     <br />
     <a href="#how-to-use"><strong>How to use »</strong></a>
     <br />
@@ -57,6 +57,9 @@
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#features">Features</a>
     </li>
     <li>
       <a href="#how-to-use">How To Use</a>
@@ -93,9 +96,25 @@
 
 [![Comics / Manga Downloader Screen Shot][product-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension) 
 
-A simple cross browser extension to download comics / manga as PDF, CBZ, or ZIP from any site.
+A simple cross browser extension to download comics / manga as CBZ, PDF, or ZIP from any site.
 
 **Although this extension was created to download comics / manga, it will also work on any website which has `<img>` or `<canvas>` attribute.**
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+<!-- FEATURES -->
+## Features
+
+- **Download format**
+  - **Download as** options are ordered: **CBZ** → **PDF** → **ZIP**.
+  - Default is **CBZ** on first run. Your chosen format is remembered (saved in browser storage) and restored the next time you open the popup.
+
+- **Auto-detect pages**
+  - An **Auto-detect pages (recommended)** toggle lets the extension automatically detect and select page images.
+  - Default is **ON**; the toggle state is saved and restored.
+  - **When ON:** The extension runs auto-detect and preselects likely pages.
+  - **When OFF:** No auto-scan runs; all images are selected by default.
+  - A **Rescan** button always runs auto-detect and updates the selection, regardless of the toggle state.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -104,16 +123,18 @@ A simple cross browser extension to download comics / manga as PDF, CBZ, or ZIP 
 - Visit any website.
 - Wait for all images to finish loading.
 - Click the extension icon to open the extension popup.
-- Select the images you want to include in the output.
+- **Auto-detect (optional):** Use **Auto-detect pages** to have the extension preselect page images, or turn it off to select all images. Use **Rescan** to run auto-detect again at any time.
+- Select or adjust the images you want to include in the output.
 - You can filter images by image dimensions or by image URL.
-- Enter a file name, choose **Download as** (PDF, CBZ, or ZIP), choose a download method, and click **Download**.
-  - **PDF** (default): Direct download or Built-in browser (print to PDF).
-  - **CBZ** or **ZIP**: Available via **Direct download** only; images are packaged in page order (e.g. 001.jpg, 002.png).
+- Enter a file name, choose **Download as** (**CBZ** by default; **PDF** or **ZIP**; your choice is remembered), choose a download method, and click **Download**.
+  - **CBZ** (default): Direct download; images are packaged in page order (e.g. 001.jpg, 002.png).
+  - **PDF**: Direct download or Built-in browser (print to PDF).
+  - **ZIP**: Direct download only; images are packaged in page order.
 
 ### Download methods
 
 **Direct Download**
-- The file (PDF, CBZ, or ZIP) will be downloaded automatically.
+- The file (CBZ, PDF, or ZIP) will be downloaded automatically.
 
 **Built-in Browser**
 - The browser’s print dialog will open.
