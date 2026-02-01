@@ -324,3 +324,22 @@ label {
   cursor: pointer;
   display: inline-flex;
 }
+
+/* Auto-detect pages */
+#autoDetectRescan {
+  font-size: 12px;
+  padding: 4px 10px;
+  min-height: 28px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--neutral);
+  background: var(--neutral-lightest);
+  color: var(--foreground);
+  cursor: pointer;
+}
+#autoDetectRescan:hover {
+  background: var(--neutral-lighter);
+}
+.auto-detect-hint {
+  color: var(--warning);
+  font-style: italic;
+}

@@ -4,6 +4,7 @@ import SearchView from './views/SearchView';
 import SelectAllCheckBoxView from './views/SelectAllCheckBoxView';
 import { initState, getState, setState, getAppliedFiltersForPage, saveAppliedFiltersForPage, buildAppliedFiltersState } from './model';
 import { dump } from './helpers';
+import { autoDetectPages } from '../../utils/autoDetectPages';
 
 /** Persist current filters and image selection for the current page */
 const persistAppliedFilters = async () => {
@@ -11,6 +12,58 @@ const persistAppliedFilters = async () => {
 	if (!pageUrl) return;
 	const data = buildAppliedFiltersState();
 	await saveAppliedFiltersForPage(pageUrl, data);
+};
+
+/** Key for an image in the list (src|type). */
+const imageKey = (img) => `${img.src}|${img.type || (img.src && img.src.startsWith('data') ? 'data' : 'url')}`;
+
+/**
+ * Run auto-detect on current filteredImages and apply preselection by confidence.
+ * confidence >= 0.70: preselect detected pages, no hint.
+ * 0.45 <= confidence < 0.70: preselect and show "Low confidence" hint.
+ * confidence < 0.45: do not preselect; leave selection as-is (manual).
+ */
+const runAutoDetectAndApply = () => {
+	const enabled = getState('autoDetectEnabled');
+	if (enabled === false) return;
+
+	let filteredImages = getState('filteredImages') || [];
+	if (!filteredImages.length) return;
+
+	const result = autoDetectPages(filteredImages);
+	setState('autoDetectLastResult', result);
+
+	const conf = result.confidence;
+	const shouldPreselect = conf >= 0.45;
+	const showLowConfidenceHint = conf >= 0.45 && conf < 0.70;
+
+	if (shouldPreselect && result.selected && result.selected.length > 0) {
+		const selectedKeys = new Set(result.selected.map(imageKey));
+		filteredImages = filteredImages.map((img) => ({
+			...img,
+			checked: selectedKeys.has(imageKey(img)),
+		}));
+		setState('filteredImages', filteredImages);
+		persistAppliedFilters();
+	}
+
+	// Update hint UI
+	const hintEl = document.getElementById('autoDetectHint');
+	if (hintEl) {
+		if (showLowConfidenceHint) {
+			hintEl.textContent = 'Low confidence — check selection.';
+			hintEl.style.display = '';
+		} else {
+			hintEl.textContent = '';
+			hintEl.style.display = 'none';
+		}
+	}
+
+	if (result.reason) console.log('[autoDetectPages]', result.reason);
+
+	SelectAllCheckBoxView.render(filteredImages);
+	ImagesView.render(filteredImages);
+	DownloadView.render(filteredImages);
 };
 
 const imagesController = async function () {
@@ -236,6 +289,9 @@ export const init = async function ({ images, title, pageUrl }) {
 	if (saved) {
 		setState('query', saved.query || '');
 		setState('selectedDimensionFilters', Array.isArray(saved.selectedDimensionFilters) ? saved.selectedDimensionFilters : []);
+		setState('autoDetectEnabled', saved.autoDetectEnabled !== false);
+	} else {
+		setState('autoDetectEnabled', true);
 	}
 
 	applyFilters();
@@ -250,6 +306,8 @@ export const init = async function ({ images, title, pageUrl }) {
 			return img;
 		});
 		setState('filteredImages', filteredImages);
+	} else if (getState('autoDetectEnabled') !== false) {
+		runAutoDetectAndApply();
 	}
 
 	// Restore download state first, before rendering
@@ -259,6 +317,20 @@ export const init = async function ({ images, title, pageUrl }) {
 	const queryInput = document.querySelector('#query');
 	if (queryInput) queryInput.value = getState('query') || '';
 	ImagesView.setSelectedDimensions(getState('selectedDimensionFilters') || []);
+
+	// Sync auto-detect toggle and wire handlers
+	const autoDetectToggle = document.getElementById('autoDetectToggle');
+	if (autoDetectToggle) {
+		autoDetectToggle.checked = getState('autoDetectEnabled') !== false;
+		autoDetectToggle.addEventListener('change', () => {
+			setState('autoDetectEnabled', autoDetectToggle.checked);
+			persistAppliedFilters();
+		});
+	}
+	const autoDetectRescan = document.getElementById('autoDetectRescan');
+	if (autoDetectRescan) {
+		autoDetectRescan.addEventListener('click', () => runAutoDetectAndApply());
+	}
 
 	imagesController();
 	ImagesView.addHandlerSelection(imagesSelectionController);

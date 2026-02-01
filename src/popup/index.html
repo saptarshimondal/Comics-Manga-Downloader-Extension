@@ -632,6 +632,15 @@
         </div>
       </div>
 
+      <div id="auto_detect_container" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+          <input type="checkbox" id="autoDetectToggle" checked title="Auto-detect comic/manga pages from the image list">
+          <span>Auto-detect pages (recommended)</span>
+        </label>
+        <button type="button" id="autoDetectRescan" title="Re-run auto-detect on current image list (no rescan)">Rescan</button>
+        <span id="autoDetectHint" class="auto-detect-hint" style="display: none; font-size: 11px; color: #b45309;"></span>
+      </div>
+
       <div>
         <table class="grid">
           <colgroup>

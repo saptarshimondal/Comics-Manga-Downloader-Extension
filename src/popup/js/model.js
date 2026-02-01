@@ -7,7 +7,7 @@ const state = {
 		{ 'filteredImages': [] },
 		{ 'query': '' },
 		{ 'imageDimensions': {} }, // Store dimensions by image key (src|type): { 'url1|url': '100x200', 'data1|data': '500x500', ... }
-		{ 'selectedDimensionFilters': [] } // Currently selected dimension filters (array for multiple selection)
+		{ 'selectedDimensionFilters': [] }, // Currently selected dimension filters (array for multiple selection)
 	]
 };
 
@@ -152,11 +152,12 @@ export const saveAppliedFiltersForPage = async (pageUrl, data) => {
 export const buildAppliedFiltersState = () => {
 	const query = getState('query') || '';
 	const selectedDimensionFilters = getState('selectedDimensionFilters') || [];
+	const autoDetectEnabled = getState('autoDetectEnabled');
 	const filteredImages = getState('filteredImages') || [];
 	const imageSelection = {};
 	filteredImages.forEach((img) => {
 		const key = `${img.src}|${img.type || (img.src.startsWith('data') ? 'data' : 'url')}`;
 		imageSelection[key] = !!img.checked;
 	});
-	return { query, selectedDimensionFilters, imageSelection };
+	return { query, selectedDimensionFilters, imageSelection, autoDetectEnabled };
 };
