@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.3...v1.7.4) (2026-02-01)
+
+
+### Bug Fixes
+
+* **firefox:** add data_collection_permissions for AMO validation ([94d20a7](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/94d20a757ec9a45b6a0b2cdc803c439c961ebe14))
+
 ## [1.7.3](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.2...v1.7.3) (2026-02-01)
 
 
