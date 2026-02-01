@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.3](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.2...v1.7.3) (2026-02-01)
+
+
+### Bug Fixes
+
+* **firefox:** add gecko add-on id for MV3 AMO submission ([e94994a](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/e94994a9dcd8ff3b43016eb774d5c11677e0be8a))
+* **firefox:** add gecko add-on id for MV3 AMO submission ([0a222df](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/0a222df3a5e9077267789961087d216b80dcd3f0))
+
 ## [1.7.2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.1...v1.7.2) (2026-01-31)
 
 
