@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.8.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.5...v1.8.0) (2026-02-01)
+
+
+### Features
+
+* **auto-detect:** implement page detection scoring/grouping + popup integration ([6c962a9](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/6c962a994aaea3e2de882f06e69284078e9630f4))
+
+
+### Bug Fixes
+
+* **auto-detect:** improve URL-family grouping and prevent hex filename dedup collisions ([5b0b3ad](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/5b0b3ad0dd480b2ac68c2f41ab5c9fa145b63a63))
+* **auto-detect:** persist default-on toggle and disable autoscan when unchecked ([8ab92da](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/8ab92da5f23dd5f2bee8e0fec11c16f0d70106e7))
+* **download:** default to CBZ and reorder formats (CBZ → PDF → ZIP) ([685eb1b](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/685eb1bc1908764950bb4ed40cba7faec92598ca))
+
 ## [1.7.5](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.4...v1.7.5) (2026-02-01)
 
 
