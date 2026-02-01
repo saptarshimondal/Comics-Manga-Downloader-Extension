@@ -22,10 +22,11 @@ const imageKey = (img) => `${img.src}|${img.type || (img.src && img.src.startsWi
  * confidence >= 0.70: preselect detected pages, no hint.
  * 0.45 <= confidence < 0.70: preselect and show "Low confidence" hint.
  * confidence < 0.45: do not preselect; leave selection as-is (manual).
+ * @param {boolean} force - If true, run even when auto-detect toggle is OFF (e.g. Rescan button).
  */
-const runAutoDetectAndApply = () => {
+export const runAutoDetectAndApply = (force = false) => {
 	const enabled = getState('autoDetectEnabled');
-	if (enabled === false) return;
+	if (!force && enabled === false) return;
 
 	let filteredImages = getState('filteredImages') || [];
 	if (!filteredImages.length) return;
@@ -61,6 +62,25 @@ const runAutoDetectAndApply = () => {
 
 	if (result.reason) console.log('[autoDetectPages]', result.reason);
 
+	SelectAllCheckBoxView.render(filteredImages);
+	ImagesView.render(filteredImages);
+	DownloadView.render(filteredImages);
+};
+
+/**
+ * Set all filtered images to selected (checked) and re-render. Used when auto-detect is turned OFF.
+ */
+export const setAllSelectedAndRender = () => {
+	let filteredImages = getState('filteredImages') || [];
+	if (!filteredImages.length) return;
+	filteredImages = filteredImages.map((img) => ({ ...img, checked: true }));
+	setState('filteredImages', filteredImages);
+	persistAppliedFilters();
+	const hintEl = document.getElementById('autoDetectHint');
+	if (hintEl) {
+		hintEl.textContent = '';
+		hintEl.style.display = 'none';
+	}
 	SelectAllCheckBoxView.render(filteredImages);
 	ImagesView.render(filteredImages);
 	DownloadView.render(filteredImages);
@@ -318,18 +338,24 @@ export const init = async function ({ images, title, pageUrl }) {
 	if (queryInput) queryInput.value = getState('query') || '';
 	ImagesView.setSelectedDimensions(getState('selectedDimensionFilters') || []);
 
-	// Sync auto-detect toggle and wire handlers
+	// Sync auto-detect toggle and wire handlers: persist on change; toggle OFF => all selected, toggle ON => run auto-detect once
 	const autoDetectToggle = document.getElementById('autoDetectToggle');
 	if (autoDetectToggle) {
 		autoDetectToggle.checked = getState('autoDetectEnabled') !== false;
 		autoDetectToggle.addEventListener('change', () => {
-			setState('autoDetectEnabled', autoDetectToggle.checked);
+			const enabled = autoDetectToggle.checked;
+			setState('autoDetectEnabled', enabled);
 			persistAppliedFilters();
+			if (enabled) {
+				runAutoDetectAndApply();
+			} else {
+				setAllSelectedAndRender();
+			}
 		});
 	}
 	const autoDetectRescan = document.getElementById('autoDetectRescan');
 	if (autoDetectRescan) {
-		autoDetectRescan.addEventListener('click', () => runAutoDetectAndApply());
+		autoDetectRescan.addEventListener('click', () => runAutoDetectAndApply(true));
 	}
 
 	imagesController();

@@ -16,7 +16,7 @@ export const setState = (key, value) => {
 };
 
 export const getState = (key) => {
-	return state.data[key] ? state.data[key] : null;
+	return Object.prototype.hasOwnProperty.call(state.data, key) ? state.data[key] : null;
 };
 
 
