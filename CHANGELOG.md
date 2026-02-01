@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.5](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.4...v1.7.5) (2026-02-01)
+
+
+### Bug Fixes
+
+* **firefox:** generate AMO-compatible manifest from manifest.base.json ([180159d](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/180159ddad852d5d10914861344d3de8e19622b5))
+* **firefox:** generate AMO-compatible manifest from manifest.base.json ([e603cc3](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/e603cc34bf1c1c590ea321c29d9bf9e4e03d4bfb))
+
 ## [1.7.4](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.3...v1.7.4) (2026-02-01)
 
 
