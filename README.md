@@ -36,7 +36,7 @@
   <h3 align="center">Comics / Manga Downloader Extension</h3>
 
   <p align="center">
-    A cross browser extension to download comics / manga as CBZ, PDF, or ZIP from any site!
+    A cross-browser extension to download comics / manga as CBZ, PDF, or ZIP from any site!
     <br />
     <a href="#how-to-use"><strong>How to use »</strong></a>
     <br />
@@ -57,6 +57,18 @@
   <ol>
     <li>
       <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#quick-start">Quick Start</a>
+    </li>
+    <li>
+      <a href="#supported-sites-and-limitations">Supported sites and limitations</a>
+    </li>
+    <li>
+      <a href="#permissions">Permissions</a>
+    </li>
+    <li>
+      <a href="#troubleshooting">Troubleshooting</a>
     </li>
     <li>
       <a href="#features">Features</a>
@@ -96,9 +108,53 @@
 
 [![Comics / Manga Downloader Screen Shot][product-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension) 
 
-A simple cross browser extension to download comics / manga as CBZ, PDF, or ZIP from any site.
+A simple cross-browser extension to download comics / manga as CBZ, PDF, or ZIP from any site.
 
-**Although this extension was created to download comics / manga, it will also work on any website which has `<img>` or `<canvas>` attribute.**
+**Although this extension was created to download comics / manga, it will also work on websites that render pages using `<img>` or `<canvas>` elements.**
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## Quick Start
+
+1. Install the extension (see **<a href="#installation">Installation</a>** below).
+2. Open a chapter/page and **wait for images to load** (scroll once if the site lazy-loads).
+3. Click the extension icon.
+4. (Optional) Keep **Auto-detect pages** ON to preselect likely comic pages, or turn it OFF to select everything.
+5. Choose **CBZ / PDF / ZIP**, enter a filename, and click **Download**.
+
+## Supported sites and limitations
+
+This extension works on many sites where pages are rendered as accessible `<img>` or `<canvas>` elements.
+
+It may not work (or may download blank/missing pages) on sites that:
+- require login with restricted image access
+- use DRM/encrypted viewers
+- load images via `blob:` URLs or block cross-origin fetching
+
+## Permissions
+
+This extension only needs a few permissions to work:
+
+- **activeTab**: Lets the extension access the current tab *only when you click the extension*. Used to read the images/canvases on the page you’re viewing.
+- **scripting**: Allows injecting a small content script into the current page to detect and collect page images (and run auto-detect).
+- **storage**: Saves your preferences (e.g., selected download format and Auto-detect toggle) so they persist between sessions.
+- **host permissions (`<all_urls>`)**: Allows the extension to work on any website you choose to use it on, so it can detect images from the page you’re currently visiting.
+
+**Privacy note:** The extension processes images locally in your browser to build CBZ/PDF/ZIP files. It does not upload your browsing data or images to any server.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+## Troubleshooting
+
+**Pages are missing / blank**
+- Many readers lazy-load pages. Scroll through the chapter once, then click **Rescan**.
+- Try turning **Auto-detect pages** OFF and manually select pages.
+
+**PDF margins look wrong (Built-in Browser method)**
+- Set Destination: **Save as PDF**
+- More settings → Margins: **None**
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -156,26 +212,29 @@ A simple cross browser extension to download comics / manga as CBZ, PDF, or ZIP 
 
 * Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page on GitHub.
 * Open the latest release and download the **.xpi** asset.
+[![Installation Firefox xpi Screenshot][release-screenshot-firefox-xpi]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
 * Install the extension in Firefox using one of:
   * **Option 1:** Open the downloaded **.xpi** file with Firefox (double-click or drag it into a Firefox window).
   * **Option 2:** In Firefox, open the Add-ons Manager (`about:addons`), click the gear icon, choose **Install Add-on From File…**, and select the **.xpi** file.
+
+The **.xpi** is signed (from AMO approval) so it should install normally. To update, install the newest **.xpi** from the latest GitHub [Release](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases).
 
 **Alternative: Install from the Release ZIP (Temporary Add-on)**
 
 This method is for testing or development. The add-on is **temporary**—Firefox removes it when you restart the browser.
 
 * Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page, open the latest release, and download the release **.zip** asset for firefox.
+[![Installation Firefox zip Screenshot][release-screenshot-firefox-zip]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
 * Open Firefox and go to `about:debugging#/runtime/this-firefox`.
 * Click **Load Temporary Add-on…**.
-* Select the **.zip** file.
-
-The **.xpi** is signed (from AMO approval) so it should install normally. To update, install the newest **.xpi** from the latest GitHub Release.
+[![Firefox Load Temporary Add-on Screenshot][firefox-load-temporary-add-on]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+* Select the **.zip** file you have downloaded for firefox.
 
 #### Google Chrome
 
 * Visit the [releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page.
-* Download the binary file from the latest release.
-[![Download Release Screen Shot][release-screenshot]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
+* Download the release **.zip** asset for chrome.
+[![Installation Chrome zip Screenshot][release-screenshot-chrome-zip]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
 * Unzip the downloaded file.
 * Open Google Chrome and visit the `chrome://extensions` page.
 * Turn on **Developer mode**.
@@ -193,7 +252,7 @@ Please read the following to setup the project locally for development.
 
 #### Prerequisites
 
-* [Install node](https://nodejs.org/en/download/)
+* [Install node](https://nodejs.org/en/download/) (Node.js 18+ recommended)
 * Install Webpack
 	```sh
 	npm install -g webpack
@@ -380,5 +439,9 @@ Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
 [linkedin-url]: https://linkedin.com/in/saptarshi-mondal-732986126
 [product-screenshot]: images/screenshot.jpg
 [release-screenshot]: images/release.png
+[release-screenshot-firefox-xpi]: images/release-firefox-xpi.png
+[release-screenshot-firefox-zip]: images/release-firefox-zip.png
+[release-screenshot-chrome-zip]: images/release-chrome-zip.png
+[firefox-load-temporary-add-on]: images/firefox-load-temporary-add-on.png
 [installation-chrome-screenshot]: images/installation-chrome.gif
 [pin-chrome-screenshot]: images/pin-chrome.gif
