@@ -9,6 +9,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const DIST_DIR = path.resolve(__dirname, "dist");
 const SRC_DIR = path.resolve(__dirname, "src");
 
+const isListed = process.env.LISTED === "1";
+
 const ASSET_EXTENSIONS = [
   "jpg",
   "jpeg",
@@ -99,7 +101,9 @@ module.exports = {
             // Firefox MV3 AMO requirements
             manifest.browser_specific_settings = {
               gecko: {
-                id: "comics-manga-downloader@saptarshimondal",
+                id: isListed
+                  ? "comics-manga-downloader-ext@saptarshimondal"
+                  : "comics-manga-downloader@saptarshimondal",
                 strict_min_version: "140.0",
                 data_collection_permissions: {
                   required: ["none"],
