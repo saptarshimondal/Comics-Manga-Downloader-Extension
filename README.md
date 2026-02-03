@@ -17,6 +17,10 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
+<!-- [![AMO Users][amo-users-shield]][amo-url]
+[![AMO Rating][amo-rating-shield]][amo-url]
+[![AMO Downloads][amo-downloads-shield]][amo-url] -->
+[![Firefox Add-on][amo-shield]][amo-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -34,6 +38,11 @@
   </a>
 
   <h3 align="center">Comics / Manga Downloader Extension</h3>
+  <p align="center">
+    🦊 <a href="https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/"><b>Install on Firefox (AMO)</b></a>
+    &nbsp;•&nbsp;
+    ⭐ <a href="https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension"><b>Star on GitHub</b></a>
+  </p>
 
   <p align="center">
     A cross-browser extension to download comics / manga as CBZ, PDF, or ZIP from any site!
@@ -210,6 +219,10 @@ This extension only needs a few permissions to work:
 
 #### Firefox
 
+✅ **Recommended:** 🦊 **[Install from Firefox Add-ons (AMO)][amo-url]**
+
+
+**Alternative:** Install from releases
 * Go to the [Releases](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases) page on GitHub.
 * Open the latest release and download the **.xpi** asset.
 [![Installation Firefox xpi Screenshot][release-screenshot-firefox-xpi]](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/releases)
@@ -404,7 +417,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Saptarshi Mondal - [@Saptarshi_77](https://twitter.com/Saptarshi_77) - mondalsaptarshi7@gmail.com
 
-Project Link: [https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension)
+Project Link: [GitHub Repo][repo-url]
 
 Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
 
@@ -445,3 +458,9 @@ Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
 [firefox-load-temporary-add-on]: images/firefox-load-temporary-add-on.png
 [installation-chrome-screenshot]: images/installation-chrome.gif
 [pin-chrome-screenshot]: images/pin-chrome.gif
+[amo-url]: https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/
+[amo-shield]: https://img.shields.io/amo/v/comics-manga-dl-by-saptarshi?style=for-the-badge&logo=firefoxbrowser&logoColor=white
+<!-- [amo-users-shield]: https://img.shields.io/amo/users/comics-manga-dl-by-saptarshi?style=for-the-badge&logo=mozilla-firefox&logoColor=white
+[amo-rating-shield]: https://img.shields.io/amo/rating/comics-manga-dl-by-saptarshi?style=for-the-badge&logo=firefoxbrowser&logoColor=white -->
+[repo-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension
+<!-- [amo-downloads-shield]: https://img.shields.io/amo/dw/comics-manga-dl-by-saptarshi?style=for-the-badge&logo=firefoxbrowser&logoColor=white -->
