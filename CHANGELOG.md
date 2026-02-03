@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.8.0...v1.8.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* sign firefox xpi in release workflow ([81f1931](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/81f19316570eb1ebb8d0cf463ba05076a10827dd))
+* sign firefox xpi in release workflow ([9381517](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/9381517fe5f013cab6fde7a62c576c78a5ab3ec3))
+
 ## [1.8.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.7.5...v1.8.0) (2026-02-01)
 
 
