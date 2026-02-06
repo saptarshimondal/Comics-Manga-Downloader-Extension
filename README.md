@@ -26,7 +26,7 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+<!-- [![LinkedIn][linkedin-shield]][linkedin-url] -->
 
 
 
@@ -449,7 +449,7 @@ Follow me on GitHub - [saptarshimondal](https://github.com/saptarshimondal)
 [license-shield]: https://img.shields.io/github/license/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge
 [license-url]: https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/saptarshi-mondal-732986126
+[linkedin-url]: 
 [product-screenshot]: images/screenshot.jpg
 [release-screenshot]: images/release.png
 [release-screenshot-firefox-xpi]: images/release-firefox-xpi.png
