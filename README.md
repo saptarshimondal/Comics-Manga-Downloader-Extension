@@ -17,15 +17,15 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Firefox Add-on][amo-shield]][amo-url]
-[![Contributors][contributors-shield]][contributors-url]
-[![AMO Users][amo-users-shield]][amo-url]
-[![AMO Rating][amo-rating-shield]][amo-url]
-[![AMO Downloads][amo-downloads-shield]][amo-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![Firefox Add-on](https://img.shields.io/amo/v/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
+[![Contributors](https://img.shields.io/github/contributors/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/graphs/contributors)
+[![AMO Users](https://img.shields.io/amo/users/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
+[![AMO Rating](https://img.shields.io/amo/rating/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/reviews/)
+[![AMO Downloads](https://img.shields.io/amo/dw/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
+[![Forks](https://img.shields.io/github/forks/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/network/members)
+[![Stargazers](https://img.shields.io/github/stars/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/stargazers)
+[![Issues](https://img.shields.io/github/issues/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/issues)
+[![MIT License](https://img.shields.io/github/license/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/blob/main/LICENSE)
 
 
 
