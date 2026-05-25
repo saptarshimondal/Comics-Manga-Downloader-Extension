@@ -17,15 +17,15 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Firefox Add-on](https://img.shields.io/amo/v/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
-[![Contributors](https://img.shields.io/github/contributors/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/graphs/contributors)
-[![AMO Users](https://img.shields.io/amo/users/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
-[![AMO Rating](https://img.shields.io/amo/rating/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/reviews/)
-[![AMO Downloads](https://img.shields.io/amo/dw/your-addon-id?style=for-the-badge)](https://addons.mozilla.org/firefox/addon/your-addon-id/)
-[![Forks](https://img.shields.io/github/forks/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/network/members)
-[![Stargazers](https://img.shields.io/github/stars/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/stargazers)
-[![Issues](https://img.shields.io/github/issues/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/issues)
-[![MIT License](https://img.shields.io/github/license/your-username/your-repo?style=for-the-badge)](https://github.com/your-username/your-repo/blob/main/LICENSE)
+[![Firefox Add-on](https://img.shields.io/amo/v/comics-manga-dl-by-saptarshi?style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/)
+[![Contributors](https://img.shields.io/github/contributors/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge)](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/graphs/contributors)
+[![AMO Users](https://img.shields.io/amo/users/comics-manga-dl-by-saptarshi?style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/)
+[![AMO Rating](https://img.shields.io/amo/rating/comics-manga-dl-by-saptarshi?style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/reviews/)
+[![AMO Downloads](https://img.shields.io/amo/dw/comics-manga-dl-by-saptarshi?style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/comics-manga-dl-by-saptarshi/)
+[![Forks](https://img.shields.io/github/forks/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge)](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/network/members)
+[![Stargazers](https://img.shields.io/github/stars/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge)](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/stargazers)
+[![Issues](https://img.shields.io/github/issues/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge)](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/issues)
+[![MIT License](https://img.shields.io/github/license/saptarshimondal/Comics-Manga-Downloader-Extension?style=for-the-badge)](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/blob/master/LICENSE)
 
 
 
