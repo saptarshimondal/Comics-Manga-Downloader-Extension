@@ -17,11 +17,11 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-<!-- [![AMO Users][amo-users-shield]][amo-url]
-[![AMO Rating][amo-rating-shield]][amo-url]
-[![AMO Downloads][amo-downloads-shield]][amo-url] -->
 [![Firefox Add-on][amo-shield]][amo-url]
 [![Contributors][contributors-shield]][contributors-url]
+[![AMO Users][amo-users-shield]][amo-url]
+[![AMO Rating][amo-rating-shield]][amo-url]
+[![AMO Downloads][amo-downloads-shield]][amo-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
