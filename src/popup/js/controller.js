@@ -39,23 +39,21 @@ export const runAutoDetectAndApply = (force = false) => {
 	const errorMsg = document.querySelector('#download_error_message');
 	const closeBtn = document.querySelector('#download_overlay_close');
 
-	if (force) {
-		if (rescanBtn) {
-			rescanBtn.disabled = true;
-			rescanBtn.textContent = 'Scanning...';
+	if (rescanBtn) {
+		rescanBtn.disabled = true;
+		rescanBtn.textContent = 'Scanning...';
+	}
+	if (overlay && overlayTitle && progressText) {
+		overlayTitle.textContent = 'Scanning pages...';
+		progressText.textContent = 'Auto-detecting the pages...';
+		if (progressFill) progressFill.style.width = '100%';
+		if (errorMsg) {
+			errorMsg.textContent = '';
+			errorMsg.classList.remove('show');
 		}
-		if (overlay && overlayTitle && progressText) {
-			overlayTitle.textContent = 'Scanning pages...';
-			progressText.textContent = 'Auto-detecting the pages...';
-			if (progressFill) progressFill.style.width = '100%';
-			if (errorMsg) {
-				errorMsg.textContent = '';
-				errorMsg.classList.remove('show');
-			}
-			if (closeBtn) closeBtn.style.display = 'none';
-			overlay.classList.add('show');
-			overlay.style.display = 'flex';
-		}
+		if (closeBtn) closeBtn.style.display = 'none';
+		overlay.classList.add('show');
+		overlay.style.display = 'flex';
 	}
 
 	setTimeout(() => {
@@ -103,15 +101,13 @@ export const runAutoDetectAndApply = (force = false) => {
 		ImagesView.render(filteredImages);
 		DownloadView.render(filteredImages);
 
-		if (force) {
-			if (rescanBtn) {
-				rescanBtn.disabled = false;
-				rescanBtn.textContent = 'Rescan';
-			}
-			if (overlay) {
-				overlay.classList.remove('show');
-				overlay.style.display = 'none';
-			}
+		if (rescanBtn) {
+			rescanBtn.disabled = false;
+			rescanBtn.textContent = 'Rescan';
+		}
+		if (overlay) {
+			overlay.classList.remove('show');
+			overlay.style.display = 'none';
 		}
 	}, 50);
 };
