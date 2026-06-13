@@ -31,40 +31,89 @@ export const runAutoDetectAndApply = (force = false) => {
 	let filteredImages = getState('filteredImages') || [];
 	if (!filteredImages.length) return;
 
-	const result = autoDetectPages(filteredImages);
-	setState('autoDetectLastResult', result);
+	const rescanBtn = document.getElementById('autoDetectRescan');
+	const overlay = document.querySelector('#downloading_overlay');
+	const overlayTitle = document.querySelector('#download_overlay_title');
+	const progressFill = document.querySelector('#download_progress_fill');
+	const progressText = document.querySelector('#download_progress_text');
+	const errorMsg = document.querySelector('#download_error_message');
+	const closeBtn = document.querySelector('#download_overlay_close');
 
-	const conf = result.confidence;
-	const shouldPreselect = conf >= 0.45;
-	const showLowConfidenceHint = conf >= 0.45 && conf < 0.70;
-
-	if (shouldPreselect && result.selected && result.selected.length > 0) {
-		const selectedKeys = new Set(result.selected.map(imageKey));
-		filteredImages = filteredImages.map((img) => ({
-			...img,
-			checked: selectedKeys.has(imageKey(img)),
-		}));
-		setState('filteredImages', filteredImages);
-		persistAppliedFilters();
-	}
-
-	// Update hint UI
-	const hintEl = document.getElementById('autoDetectHint');
-	if (hintEl) {
-		if (showLowConfidenceHint) {
-			hintEl.textContent = 'Low confidence — check selection.';
-			hintEl.style.display = '';
-		} else {
-			hintEl.textContent = '';
-			hintEl.style.display = 'none';
+	if (force) {
+		if (rescanBtn) {
+			rescanBtn.disabled = true;
+			rescanBtn.textContent = 'Scanning...';
+		}
+		if (overlay && overlayTitle && progressText) {
+			overlayTitle.textContent = 'Scanning pages...';
+			progressText.textContent = 'Auto-detecting the pages...';
+			if (progressFill) progressFill.style.width = '100%';
+			if (errorMsg) {
+				errorMsg.textContent = '';
+				errorMsg.classList.remove('show');
+			}
+			if (closeBtn) closeBtn.style.display = 'none';
+			overlay.classList.add('show');
+			overlay.style.display = 'flex';
 		}
 	}
 
-	if (result.reason) console.log('[autoDetectPages]', result.reason);
+	setTimeout(() => {
+		const result = autoDetectPages(filteredImages);
+		setState('autoDetectLastResult', result);
 
-	SelectAllCheckBoxView.render(filteredImages);
-	ImagesView.render(filteredImages);
-	DownloadView.render(filteredImages);
+		const selectedKeysForLog = new Set(result.selected.map(imageKey));
+		console.log('--- AUTO-DETECT RESULTS FOR LOADED IMAGES ---');
+		filteredImages.forEach(img => {
+			const isSelected = selectedKeysForLog.has(imageKey(img));
+			console.log(`Image: ${img.src} | Dimensions: ${img.width}x${img.height} | Selected: ${isSelected}`);
+		});
+		console.log(`[autoDetectPages] best group ${result.debug?.winningGroupKey} count=${result.debug?.winningCount} confidence=${result.confidence.toFixed(2)} cohesion=${result.debug?.winningUrlCohesion} postPassRan=${result.debug?.postPassRan} spreadIncluded=${result.spreadIncludedCount}`);
+		console.log('---------------------------------------------');
+
+		const conf = result.confidence;
+		const shouldPreselect = conf >= 0.45;
+		const showLowConfidenceHint = conf >= 0.45 && conf < 0.70;
+
+		if (shouldPreselect && result.selected && result.selected.length > 0) {
+			const selectedKeys = new Set(result.selected.map(imageKey));
+			filteredImages = filteredImages.map((img) => ({
+				...img,
+				checked: selectedKeys.has(imageKey(img)),
+			}));
+			setState('filteredImages', filteredImages);
+			persistAppliedFilters();
+		}
+
+		// Update hint UI
+		const hintEl = document.getElementById('autoDetectHint');
+		if (hintEl) {
+			if (showLowConfidenceHint) {
+				hintEl.textContent = 'Low confidence — check selection.';
+				hintEl.style.display = '';
+			} else {
+				hintEl.textContent = '';
+				hintEl.style.display = 'none';
+			}
+		}
+
+		if (result.reason) console.log('[autoDetectPages]', result.reason);
+
+		SelectAllCheckBoxView.render(filteredImages);
+		ImagesView.render(filteredImages);
+		DownloadView.render(filteredImages);
+
+		if (force) {
+			if (rescanBtn) {
+				rescanBtn.disabled = false;
+				rescanBtn.textContent = 'Rescan';
+			}
+			if (overlay) {
+				overlay.classList.remove('show');
+				overlay.style.display = 'none';
+			}
+		}
+	}, 50);
 };
 
 /**
