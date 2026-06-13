@@ -373,10 +373,35 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
     const medianWidth = widths.length ? median(widths) : medianW || 800;
     const cohesion = cohesionByPrefix.get(prefixSig) || { urlCohesion: 0, numericSequenceStrength: 0 };
 
+    // Check if this group is likely a webtoon (dominant tall aspect ratio)
+    let tallCount = 0;
+    let validCount = 0;
+    candidates.forEach(({ img }) => {
+      const { w, h } = getDimensions(img);
+      if (w > 0 && h > 0) {
+        validCount++;
+        // Very tall image (h/w >= 1.9)
+        if (h / w >= 1.9) tallCount++;
+      }
+    });
+    // If 50% or more of the valid images are very tall, treat it as a webtoon
+    const isWebtoon = validCount > 0 && (tallCount / validCount >= 0.5);
+
     const byBucket = new Map();
     candidates.forEach(({ img, index, score, meta }) => {
       const { w, h } = getDimensions(img);
-      const bucket = orientationInvariantBucketKey(w, h);
+      
+      let bucket;
+      if (isWebtoon && w > 0) {
+        // For webtoons, bucket STRICTLY by width (ignoring height)
+        const step = 50;
+        const bucketMin = Math.floor(w / step) * step;
+        const bucketMax = Math.ceil(w / step) * step;
+        bucket = `webtoon|${bucketMin}|${bucketMax}`;
+      } else {
+        bucket = orientationInvariantBucketKey(w, h);
+      }
+      
       if (!byBucket.has(bucket)) byBucket.set(bucket, []);
       byBucket.get(bucket).push({ img, index, score });
     });
