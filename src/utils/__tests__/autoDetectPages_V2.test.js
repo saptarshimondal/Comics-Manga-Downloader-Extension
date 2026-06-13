@@ -231,4 +231,30 @@ describe('autoDetectPages Algorithm V2', () => {
     expect(selectedUrls.length).toBe(41);
     expect(selectedUrls).toContain(halfResUrl);
   });
+
+  test('10. Tiny Final Credits Page Rescue (Doctor Strange Edge Case)', () => {
+    // Scenario: 30 pages at 1988x3056
+    // 1 final page at 553x768 (~7% area, representing a tiny scanlator credits page)
+    const images = [];
+    images.push({ url: 'https://cdn.comicreader.com/images/banner.jpg', width: 2000, height: 220 });
+
+    const expectedSelected = [];
+
+    for (let i = 1; i <= 30; i++) {
+      const url = `https://cdn.comicreader.com/uploads/manga/doctor-strange/chapters/4/${String(i).padStart(2, '0')}.jpg`;
+      images.push({ url, width: 1988, height: 3056 });
+      expectedSelected.push(url);
+    }
+    
+    // The tiny credits page
+    const tinyUrl = 'https://cdn.comicreader.com/uploads/manga/doctor-strange/chapters/4/31.jpg';
+    images.push({ url: tinyUrl, width: 553, height: 768 });
+    expectedSelected.push(tinyUrl);
+
+    const result = autoDetectPages(images);
+    const selectedUrls = result.selected.map(img => img.url);
+
+    expect(selectedUrls.length).toBe(31);
+    expect(selectedUrls).toContain(tinyUrl);
+  });
 });

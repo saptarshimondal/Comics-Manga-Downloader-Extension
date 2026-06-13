@@ -767,7 +767,7 @@ export function autoDetectPages(images, opts = {}) {
           selectedKeys.add(imageKey(img));
           added.push(img);
           spreadIncludedReasons.push({ index: i, area, medianArea, prefixSig: winnerPrefixSig });
-        } else if (allowOverride && inAreaRange) {
+        } else if (allowOverride) {
           selectedKeys.add(imageKey(img));
           added.push(img);
           similarityIncludedReasons.push({ index: i, area, medianArea, urlSimilarityToWinner: urlSim, includedByUrlSimilarity: true });
