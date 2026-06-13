@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.9.0](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.8.2...v1.9.0) (2026-06-13)
+
+
+### Features
+
+* show auto-detect overlay for all executions ([48f6bcc](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/48f6bcc1d8cae9691aa347bd9881de2bc9d5d5f3))
+* show extraction/scanning overlay by default when popup opens ([75e88ce](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/75e88ce8918133330d0d412928de18345f772cb2))
+* show scanning overlay and disable button during rescan ([3f39ba6](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/3f39ba696055c361d707b0da249547ca89b20a14))
+
+
+### Bug Fixes
+
+* adjust urlCohesion weights to reduce dominance penalty on heavily populated sites ([2515c7c](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/2515c7c518de0db8784f105dee1c7e32719b5089))
+* Enhance auto-detect for long-strip webtoons and chaotic sites ([aa74799](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/aa74799d610a1e7e827919b7685be02bb6c0a9f1))
+* JUNK_TOKENS false positive matching 'uploads' and remove hard reject from post-pass ([8ae89e8](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/8ae89e8bcb30c46dcd539f45648c0ed47629504b))
+* prevent Unknown size from overriding Loading state before image src is set ([090ad38](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/090ad385b3d807e14a31175b9fa8b997d78915f2))
+* remove inAreaRange from allowOverride to permit tiny sequential pages ([7471f39](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/7471f39b7f5f5d9cb0b14bbf6d100ecabbfc5c30))
+* resolve progress bar stuck state and toonsutra webtoon auto-detect ([8bcf7a9](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/8bcf7a9b00255f725bd1dad01da881f1016a4bc0))
+* resolve stuck download overlay due to page refresh and unhandled fetch errors ([37cc973](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/37cc973c49fb1a2956af21c2b740bf4c313fdeb4))
+* restore download overlay display after auto-detect hides it ([b4cc47d](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/b4cc47d17a3be98f12f75d967c3eec221221b9ef))
+* safely encompass half-resolution images (25% area) in MAD fallback ([2a2c27f](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/2a2c27f712cd8dd18c6035f46fc9e27d159304fc))
+* smart auto-detect for webtoons to ignore height ([f867bfd](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/f867bfded854b2de0c904803d3db8aa1de51120c))
+* Webtoon date-IDs and global group sequence scoring ([1f72639](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/1f726397181b6ec609330b6c00fec455a1b354be))
+
 ## [1.8.2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.8.1...v1.8.2) (2026-06-13)
 
 
