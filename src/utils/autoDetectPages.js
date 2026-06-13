@@ -3,7 +3,7 @@
  * Uses scoring, URL/size grouping, and group confidence. Does not re-scan the DOM.
  */
 
-const JUNK_TOKENS = /logo|avatar|icon|sprite|emoji|ads|advert|banner|tracking|analytics|pixel|beacon/gi;
+const JUNK_TOKENS = /\b(logo|avatar|icon|sprite|emoji|ads|advert|banner|tracking|analytics|pixel|beacon)\b/gi;
 const IMAGE_EXT = /\.(jpg|jpeg|png|webp)(\?|$)/i;
 const WEAK_HINTS = /chapter|page|manga|comic|webtoon|reader|cdn|image/gi;
 const MIN_PAGE_SCORE = 20;
@@ -741,7 +741,6 @@ export function autoDetectPages(images, opts = {}) {
         const meta = urlMetaList[i] || {};
         const url = getUrl(img);
         if (meta.prefixSig !== winnerPrefixSig) return;
-        if ((url.match(JUNK_TOKENS) || []).length > 0) return;
         
         // DOM Proximity: exclude if wildly outside main block
         if (i < mainBlock.min - 50 || i > mainBlock.max + 50) return;
