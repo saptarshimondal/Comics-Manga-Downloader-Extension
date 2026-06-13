@@ -613,6 +613,16 @@ import JSZip from 'jszip';
       return Promise.resolve(fetchTitle());
     }
 
+    if(data.method === 'getImageData'){
+      return imageToBase64(data.src)
+        .then(res => res.data)
+        .catch(err => {
+          return fetchImageViaBackground(data.src, 0)
+            .then(res => res.data)
+            .catch(() => data.src);
+        });
+    }
+
     return false;
   }
 
