@@ -320,10 +320,10 @@ function computeUrlCohesionPerPrefix(imagesWithMeta, totalCandidates) {
       0,
       Math.min(
         1,
-        0.45 * dominance +
-          0.2 * extConsistency +
-          0.15 * depthConsistency +
-          0.2 * numericSequenceStrengthVal,
+        0.10 * dominance +
+          0.30 * extConsistency +
+          0.20 * depthConsistency +
+          0.40 * numericSequenceStrengthVal,
       ),
     );
     result.set(prefixSig, {
