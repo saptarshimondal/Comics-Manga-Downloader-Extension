@@ -175,19 +175,19 @@ describe('autoDetectPages Algorithm V2', () => {
   });
 
   test('8. Real-world "uploads" URL false positive and Exact Spread', () => {
-    // Scenario from readcomicsonline.ru
+    // Scenario from a heavily-populated site
     // 20 normal pages (1988x3056)
     // 3 spreads (3976x3056)
     // The word "uploads" contains "ads", which previously triggered false positive junk filtering
     // and broke the spread rescue logic.
     const images = [];
-    images.push({ url: 'https://readcomicsonline.ru/images/banner.jpg', width: 2000, height: 220 });
+    images.push({ url: 'https://cdn.comicreader.com/images/banner.jpg', width: 2000, height: 220 });
 
     const expectedSelected = [];
 
     for (let i = 1; i <= 23; i++) {
       const isSpread = i === 3 || i === 6 || i === 11;
-      const url = `https://readcomicsonline.ru/uploads/manga/a-fractured-mind-2017/chapters/4/${String(i).padStart(2, '0')}.jpg`;
+      const url = `https://cdn.comicreader.com/uploads/manga/comic-title-2023/chapters/4/${String(i).padStart(2, '0')}.jpg`;
       const width = isSpread ? 3976 : 1988;
       const height = 3056;
       
