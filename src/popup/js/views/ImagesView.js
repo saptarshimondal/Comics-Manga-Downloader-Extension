@@ -17,6 +17,51 @@ class ImagesView extends View {
     this._dropdownUpdateTimeout = null;
     this._pendingDimensions = new Set();
     this._lastKnownDimensions = new Set();
+    
+    this._blobUrls = new Set();
+
+    this._observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          if (img.dataset.src && !img.src) {
+             const url = img.dataset.src;
+             if (url.startsWith('data:')) {
+                img.src = url;
+             } else {
+                const tabId = getState('currentTabId');
+                if (tabId != null) {
+                  browser.tabs.sendMessage(tabId, { method: 'getImageData', src: url })
+                    .then(dataUrl => {
+                       if (dataUrl && dataUrl.startsWith('data:')) {
+                          // Convert base64 to object URL to save DOM memory
+                          fetch(dataUrl)
+                            .then(res => res.blob())
+                            .then(blob => {
+                               const objectUrl = URL.createObjectURL(blob);
+                               img.src = objectUrl;
+                               this._blobUrls.add(objectUrl);
+                            })
+                            .catch(() => {
+                               img.src = dataUrl; // fallback
+                            });
+                       } else {
+                          img.src = url;
+                       }
+                    })
+                    .catch(err => {
+                       console.error('Failed to get image data', url, err);
+                       img.src = url; // fallback to setting src directly
+                    });
+                } else {
+                  img.src = url;
+                }
+             }
+             observer.unobserve(img);
+          }
+        }
+      });
+    }, { rootMargin: '200px' });
 
     // Listen for <img> load events inside the container (capture = true)
     // so we can update sizes even when images load after render.
@@ -128,7 +173,18 @@ class ImagesView extends View {
 
   // Override render so we can update dimensions right after DOM is inserted
   render(data) {
+    if (this._blobUrls) {
+      this._blobUrls.forEach(url => URL.revokeObjectURL(url));
+      this._blobUrls.clear();
+    }
+
     super.render(data);
+
+    if (this._observer && this._parent) {
+      this._parent.querySelectorAll('img.lazy-image').forEach(img => {
+         this._observer.observe(img);
+      });
+    }
 
     // Reset dimension tracking for new render
     this._lastKnownDimensions.clear();
@@ -189,8 +245,8 @@ class ImagesView extends View {
       
       markup += `
         <div data-id="${i}" id="card_${i}" class="card ${img.checked ? 'checked' : ''}" style="min-height: 200px;">
-          <img src="${img.src}" 
-               loading="lazy" 
+          <img data-src="${img.src}" 
+               class="lazy-image" 
                style="min-width: 50px; max-width: 200px; max-height: 100%; width: auto; height: auto; object-fit: contain;">
 
           <!-- ✅ Dimensions label -->
@@ -258,7 +314,7 @@ class ImagesView extends View {
     if (imageId === undefined) return;
 
     // Get the image src from the img element itself (more reliable)
-    const imgSrc = imgEl.src;
+    const imgSrc = imgEl.dataset.src || imgEl.src;
     if (!imgSrc) return;
     
     // Determine type from src
