@@ -204,4 +204,31 @@ describe('autoDetectPages Algorithm V2', () => {
       expect(selectedUrls).toContain(url);
     });
   });
+
+  test('9. Half-Resolution Last Page Rescue (Tarzan Edge Case)', () => {
+    // Scenario: 40 pages at 2560x3937
+    // 1 final page at 1280x1968 (exactly half resolution, meaning ~25% area)
+    // 25% area is on the absolute edge of MAD boundaries.
+    const images = [];
+    images.push({ url: 'https://cdn.comicreader.com/images/banner.jpg', width: 2000, height: 220 });
+
+    const expectedSelected = [];
+
+    for (let i = 1; i <= 40; i++) {
+      const url = `https://cdn.comicreader.com/uploads/manga/tarzan/chapters/1/${String(i).padStart(2, '0')}.jpg`;
+      images.push({ url, width: 2560, height: 3937 });
+      expectedSelected.push(url);
+    }
+    
+    // The half resolution page
+    const halfResUrl = 'https://cdn.comicreader.com/uploads/manga/tarzan/chapters/1/41.jpg';
+    images.push({ url: halfResUrl, width: 1280, height: 1968 });
+    expectedSelected.push(halfResUrl);
+
+    const result = autoDetectPages(images);
+    const selectedUrls = result.selected.map(img => img.url);
+
+    expect(selectedUrls.length).toBe(41);
+    expect(selectedUrls).toContain(halfResUrl);
+  });
 });

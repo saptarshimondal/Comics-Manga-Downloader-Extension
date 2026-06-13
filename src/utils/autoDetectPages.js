@@ -734,8 +734,8 @@ export function autoDetectPages(images, opts = {}) {
     const madArea = selectedAreas.length > 0 ? mad(selectedAreas) : 0;
     const areaMin = medianArea * SPREAD_AREA_MIN;
     const areaMax = medianArea * SPREAD_AREA_MAX;
-    const areaMinMAD = medianArea - MAD_K * (madArea || medianArea * 0.3);
-    const areaMaxMAD = medianArea + MAD_K * (madArea || medianArea * 0.3);
+    const areaMinMAD = medianArea - MAD_K * (madArea || medianArea * 0.35);
+    const areaMaxMAD = medianArea + MAD_K * (madArea || medianArea * 0.35);
 
     if (winnerPrefixSig && winnerPrefixSig !== 'global' && urlCohesion >= COHESION_FOR_SIMILARITY_BOOST && count >= COUNT_FOR_SIMILARITY_BOOST) {
       const added = [];
