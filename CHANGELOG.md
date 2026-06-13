@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.8.1...v1.8.2) (2026-06-13)
+
+
+### Bug Fixes
+
+* Implement lazy loading for images with IntersectionObserver ([cdfbd3c](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/cdfbd3ca763586505acab75fa230314c365ec40f))
+* Implement lazy loading for images with IntersectionObserver ([3f714d2](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/commit/3f714d2c903ecafbdf4b46d1d919a784f5510d0c))
+
 ## [1.8.1](https://github.com/saptarshimondal/Comics-Manga-Downloader-Extension/compare/v1.8.0...v1.8.1) (2026-02-03)
 
 
