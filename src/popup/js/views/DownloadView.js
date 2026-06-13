@@ -236,6 +236,11 @@ class DownloadView extends View {
 				}
 			}
 
+			if (message.error) {
+				this.showError(message.error);
+				return false;
+			}
+
 			this.updateProgress(message.progress, message.text);
 
 			if (message.progress >= 100) {
@@ -442,6 +447,7 @@ class DownloadView extends View {
 		this._errorMessage.classList.add('show')
 		this._progressText.textContent = 'Download failed'
 		this._downloadComplete = false
+		this._showOverlayCloseButton()
 		const tabId = getCurrentTabId();
 		if (tabId != null) clearDownloadState(tabId);
 		

@@ -246,10 +246,7 @@ import JSZip from 'jszip';
     progressCallback(5, 'Starting image processing...');
     const processedImages = await processImagesInContentScript(images, progressCallback);
     if (!processedImages || processedImages.length === 0) {
-      const failedInfo = failedUrls.length > 0
-        ? ` Failed fetches: ${failedUrls.map(f => `#${f.index} (${f.reason})`).join('; ')}.`
-        : '';
-      throw new Error(`No valid images to download. Some images may have unsupported formats.${failedInfo}`);
+      throw new Error(`No valid images to download. Some images may have unsupported formats or failed to fetch.`);
     }
     const total = processedImages.length;
     const zip = new JSZip();

@@ -241,3 +241,14 @@ browser.runtime.onConnect.addListener(function(port) {
     }
   });
 });
+
+// Clear download state if the user refreshes the page (navigates) or closes the tab
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'loading') {
+    clearDownloadStateForTab(tabId);
+  }
+});
+
+browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  clearDownloadStateForTab(tabId);
+});
