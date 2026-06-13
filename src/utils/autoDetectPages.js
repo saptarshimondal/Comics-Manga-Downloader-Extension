@@ -93,8 +93,9 @@ function parseUrlSafe(url) {
  * Strips trailing image extension so "token.jpg" is treated as opaque; avoids splitting same URL family by per-resource token.
  */
 function isOpaqueIdSegment(seg) {
-  if (!seg || seg.length < OPAQUE_SEGMENT_MIN_LENGTH) return false;
+  if (!seg) return false;
   const withoutExt = seg.replace(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i, '');
+  if (/^\d{8}[_-]\d+$/.test(withoutExt)) return true; // Catch date_id like 20260425_223
   if (withoutExt.length < OPAQUE_SEGMENT_MIN_LENGTH) return false;
   if (!OPAQUE_CHARSET.test(withoutExt)) return false;
   const hasDigit = /\d/.test(withoutExt);
@@ -465,6 +466,8 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
     const med = median(allWithDims.map(({ img }) => getDimensions(img).w));
     byGlobalBucket.forEach((items, bucket) => {
       if (items.length >= MIN_GROUP_COUNT) {
+        const nums = items.map(({ index }) => urlMetaList[index].fileNum);
+        const seqStrength = numericSequenceStrength(nums);
         groups.push({
           key: `global|${bucket}`,
           items,
@@ -472,7 +475,7 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
           medianHeight: medianH || 1200,
           prefixSig: 'global',
           urlCohesion: 0,
-          numericSequenceStrength: 0,
+          numericSequenceStrength: seqStrength,
         });
       }
     });
