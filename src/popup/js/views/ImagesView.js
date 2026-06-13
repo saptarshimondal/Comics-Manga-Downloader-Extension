@@ -294,6 +294,8 @@ class ImagesView extends View {
   }
 
   _setDimsForImg(imgEl) {
+    if (!imgEl.getAttribute('src')) return; // Still waiting for IntersectionObserver to load it
+    
     const card = imgEl.closest('.card');
     if (!card) return;
 
