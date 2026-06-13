@@ -19,7 +19,17 @@ const getImagesData = async (images, progressCallback) => {
         return null;
       }
       
-      image = await fetchImageInBackground(src)
+      try {
+        image = await fetchImageInBackground(src);
+      } catch (err) {
+        console.error(`Error fetching image ${src} in background:`, err);
+        processed++;
+        if (progressCallback && total > 0) {
+          const progress = Math.round((processed / total) * 100);
+          progressCallback(progress, `Processing image ${processed} of ${total}...`);
+        }
+        return null;
+      }
       
       // Ensure we have valid image data
       if (!image || !image.data) {

@@ -244,7 +244,10 @@ import JSZip from 'jszip';
       browser.runtime.sendMessage({ type: 'downloadProgress', progress, text }).catch(() => {});
     };
     progressCallback(5, 'Starting image processing...');
-    const processedImages = await processImagesInContentScript(images, progressCallback);
+    const imageProgressCallback = (progress, text) => {
+      progressCallback(Math.round(progress * 0.5), text);
+    };
+    const processedImages = await processImagesInContentScript(images, imageProgressCallback);
     if (!processedImages || processedImages.length === 0) {
       throw new Error(`No valid images to download. Some images may have unsupported formats or failed to fetch.`);
     }
@@ -490,7 +493,10 @@ import JSZip from 'jszip';
         console.log('Processing images directly in content script...');
         progressCallback(5, 'Starting image processing...');
         
-        const processedImages = await processImagesInContentScript(images, progressCallback);
+        const imageProgressCallback = (progress, text) => {
+          progressCallback(Math.round(progress * 0.9), text);
+        };
+        const processedImages = await processImagesInContentScript(images, imageProgressCallback);
         
         if (processedImages.length === 0) {
           reject(new Error('No valid images to download. Some images may have unsupported formats.'));

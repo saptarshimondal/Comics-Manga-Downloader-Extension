@@ -13,7 +13,7 @@ const TINY_SIZE = 200;
 const SIZE_BUCKET_STEP = 200;
 /** Spread inclusion: area within [medianArea * SPREAD_AREA_MIN, medianArea * SPREAD_AREA_MAX]. */
 const SPREAD_AREA_MIN = 0.6;
-const SPREAD_AREA_MAX = 1.8;
+const SPREAD_AREA_MAX = 2.2;
 /** URL similarity: gated score boost and post-pass only when cohesion/similarity above these. */
 const COHESION_FOR_SIMILARITY_BOOST = 0.5;
 const COUNT_FOR_SIMILARITY_BOOST = 8;
@@ -376,19 +376,30 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
     const medianHeight = heights.length ? median(heights) : medianH || 1200;
     const cohesion = cohesionByPrefix.get(prefixSig) || { urlCohesion: 0, numericSequenceStrength: 0 };
 
-    // Check if this group is likely a webtoon (dominant tall aspect ratio)
+    // Check if this group is likely a webtoon (dominant tall aspect ratio or sliced webtoon)
     let tallCount = 0;
     let validCount = 0;
+    const widthCounts = new Map();
     candidates.forEach(({ img }) => {
       const { w, h } = getDimensions(img);
       if (w > 0 && h > 0) {
         validCount++;
         // Very tall image (h/w >= 1.9)
         if (h / w >= 1.9) tallCount++;
+        // Track width frequency (binned to 10px to handle slight variations)
+        const wBin = Math.round(w / 10) * 10;
+        widthCounts.set(wBin, (widthCounts.get(wBin) || 0) + 1);
       }
     });
-    // If 50% or more of the valid images are very tall, treat it as a webtoon
-    const isWebtoon = validCount > 0 && (tallCount / validCount >= 0.5);
+    
+    let maxDominantWidthCount = 0;
+    widthCounts.forEach(count => {
+      if (count > maxDominantWidthCount) maxDominantWidthCount = count;
+    });
+    
+    // If 50% or more of the valid images are very tall, or if > 60% share the exact same width (sliced webtoon/comic)
+    const hasConsistentWidth = validCount >= MIN_GROUP_COUNT && (maxDominantWidthCount / validCount >= 0.6);
+    const isWebtoon = validCount > 0 && ((tallCount / validCount >= 0.5) || hasConsistentWidth);
 
     const byBucket = new Map();
     candidates.forEach(({ img, index, score, meta }) => {
@@ -396,11 +407,9 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
       
       let bucket;
       if (isWebtoon && w > 0) {
-        // For webtoons, bucket STRICTLY by width (ignoring height)
-        const step = 50;
-        const bucketMin = Math.floor(w / step) * step;
-        const bucketMax = Math.ceil(w / step) * step;
-        bucket = `webtoon|${bucketMin}|${bucketMax}`;
+        // For webtoons, bucket STRICTLY by width rounded to nearest 50px
+        const wRounded = Math.round(w / 50) * 50;
+        bucket = `webtoon|${wRounded}`;
       } else {
         bucket = orientationInvariantBucketKey(w, h);
       }
