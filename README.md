@@ -264,7 +264,7 @@ Please read the following to setup the project locally for development.
 
 #### Prerequisites
 
-* [Install node](https://nodejs.org/en/download/) (Node.js 18+ recommended)
+* [Install node](https://nodejs.org/en/download/) (Node.js 24+ recommended)
 * Install Webpack
 	```sh
 	npm install -g webpack
