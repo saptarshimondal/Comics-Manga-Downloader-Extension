@@ -61,6 +61,10 @@ class DownloadView extends View {
 		});
 	}
 
+	get isDownloading() {
+		return this._isDownloading;
+	}
+
 	/**
 	 * Load preferred "Download as" format from storage and set the dropdown.
 	 * Only updates the dropdown when it is not disabled (i.e. no download in progress).
@@ -236,6 +240,11 @@ class DownloadView extends View {
 				}
 			}
 
+			if (message.error) {
+				this.showError(message.error);
+				return false;
+			}
+
 			this.updateProgress(message.progress, message.text);
 
 			if (message.progress >= 100) {
@@ -363,6 +372,7 @@ class DownloadView extends View {
 		this._parent.disabled = true
 		this._parent.value = 'Downloading...'
 		this._overlay.classList.add('show')
+		this._overlay.style.display = 'flex'
 		this._hideOverlayCloseButton()
 		this._errorMessage.classList.remove('show')
 		this._errorMessage.textContent = ''
@@ -413,6 +423,7 @@ class DownloadView extends View {
 		this._parent.value = 'Download'
 		if (this._downloadFormat) this._downloadFormat.disabled = false
 		this._overlay.classList.remove('show')
+		this._overlay.style.display = 'none'
 		this._hideOverlayCloseButton()
 		this._updateProgress(0, '')
 		const tabId = getCurrentTabId();
@@ -442,6 +453,7 @@ class DownloadView extends View {
 		this._errorMessage.classList.add('show')
 		this._progressText.textContent = 'Download failed'
 		this._downloadComplete = false
+		this._showOverlayCloseButton()
 		const tabId = getCurrentTabId();
 		if (tabId != null) clearDownloadState(tabId);
 		

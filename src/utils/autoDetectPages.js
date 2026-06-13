@@ -3,7 +3,7 @@
  * Uses scoring, URL/size grouping, and group confidence. Does not re-scan the DOM.
  */
 
-const JUNK_TOKENS = /logo|avatar|icon|sprite|emoji|ads|advert|banner|tracking|analytics|pixel|beacon/gi;
+const JUNK_TOKENS = /\b(logo|avatar|icon|sprite|emoji|ads|advert|banner|tracking|analytics|pixel|beacon)\b/gi;
 const IMAGE_EXT = /\.(jpg|jpeg|png|webp)(\?|$)/i;
 const WEAK_HINTS = /chapter|page|manga|comic|webtoon|reader|cdn|image/gi;
 const MIN_PAGE_SCORE = 20;
@@ -13,9 +13,9 @@ const TINY_SIZE = 200;
 const SIZE_BUCKET_STEP = 200;
 /** Spread inclusion: area within [medianArea * SPREAD_AREA_MIN, medianArea * SPREAD_AREA_MAX]. */
 const SPREAD_AREA_MIN = 0.6;
-const SPREAD_AREA_MAX = 1.8;
+const SPREAD_AREA_MAX = 2.2;
 /** URL similarity: gated score boost and post-pass only when cohesion/similarity above these. */
-const COHESION_FOR_SIMILARITY_BOOST = 0.75;
+const COHESION_FOR_SIMILARITY_BOOST = 0.5;
 const COUNT_FOR_SIMILARITY_BOOST = 8;
 const SIMILARITY_BOOST_CAP = 12;
 const COHESION_FOR_OVERRIDE = 0.85;
@@ -93,8 +93,9 @@ function parseUrlSafe(url) {
  * Strips trailing image extension so "token.jpg" is treated as opaque; avoids splitting same URL family by per-resource token.
  */
 function isOpaqueIdSegment(seg) {
-  if (!seg || seg.length < OPAQUE_SEGMENT_MIN_LENGTH) return false;
+  if (!seg) return false;
   const withoutExt = seg.replace(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i, '');
+  if (/^\d{8}[_-]\d+$/.test(withoutExt)) return true; // Catch date_id like 20260425_223
   if (withoutExt.length < OPAQUE_SEGMENT_MIN_LENGTH) return false;
   if (!OPAQUE_CHARSET.test(withoutExt)) return false;
   const hasDigit = /\d/.test(withoutExt);
@@ -206,7 +207,7 @@ function scoreImage(img, index, stats, cohesionBonus = 0) {
   if (maxDim > 0 && maxDim < TINY_SIZE) score -= 25;
 
   // Negative: repeated identical URL (icons/sprites) – applied via stats.urlCounts
-  const urlKey = url.split('?')[0].split('#')[0];
+  const urlKey = url.split('#')[0];
   const urlCount = stats.urlCounts.get(urlKey) || 0;
   if (urlCount > 3) score -= Math.min(20, (urlCount - 3) * 5);
 
@@ -240,7 +241,7 @@ function scoreImageComponents(img, index, stats, cohesionBonus = 0) {
   if (junkMatches) components.junkPenalty = Math.min(35, 10 + junkMatches.length * 5);
   const maxDim = Math.max(w, h);
   if (maxDim > 0 && maxDim < TINY_SIZE) components.tinyPenalty = 25;
-  const urlKey = url.split('?')[0].split('#')[0];
+  const urlKey = url.split('#')[0];
   const urlCount = stats.urlCounts.get(urlKey) || 0;
   if (urlCount > 3) components.repeatedPenalty = Math.min(20, (urlCount - 3) * 5);
   return components;
@@ -320,10 +321,10 @@ function computeUrlCohesionPerPrefix(imagesWithMeta, totalCandidates) {
       0,
       Math.min(
         1,
-        0.45 * dominance +
-          0.2 * extConsistency +
-          0.15 * depthConsistency +
-          0.2 * numericSequenceStrengthVal,
+        0.10 * dominance +
+          0.30 * extConsistency +
+          0.20 * depthConsistency +
+          0.40 * numericSequenceStrengthVal,
       ),
     );
     result.set(prefixSig, {
@@ -366,17 +367,53 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
   });
 
   const groups = [];
-  const { w: medianW } = medianDimensions(images);
+  const { w: medianW, h: medianH } = medianDimensions(images);
 
   byPrefix.forEach((candidates, prefixSig) => {
     const widths = candidates.map(({ img }) => getDimensions(img).w).filter(Boolean);
     const medianWidth = widths.length ? median(widths) : medianW || 800;
+    const heights = candidates.map(({ img }) => getDimensions(img).h).filter(Boolean);
+    const medianHeight = heights.length ? median(heights) : medianH || 1200;
     const cohesion = cohesionByPrefix.get(prefixSig) || { urlCohesion: 0, numericSequenceStrength: 0 };
+
+    // Check if this group is likely a webtoon (dominant tall aspect ratio or sliced webtoon)
+    let tallCount = 0;
+    let validCount = 0;
+    const widthCounts = new Map();
+    candidates.forEach(({ img }) => {
+      const { w, h } = getDimensions(img);
+      if (w > 0 && h > 0) {
+        validCount++;
+        // Very tall image (h/w >= 1.9)
+        if (h / w >= 1.9) tallCount++;
+        // Track width frequency (binned to 10px to handle slight variations)
+        const wBin = Math.round(w / 10) * 10;
+        widthCounts.set(wBin, (widthCounts.get(wBin) || 0) + 1);
+      }
+    });
+    
+    let maxDominantWidthCount = 0;
+    widthCounts.forEach(count => {
+      if (count > maxDominantWidthCount) maxDominantWidthCount = count;
+    });
+    
+    // If 50% or more of the valid images are very tall, or if > 60% share the exact same width (sliced webtoon/comic)
+    const hasConsistentWidth = validCount >= MIN_GROUP_COUNT && (maxDominantWidthCount / validCount >= 0.6);
+    const isWebtoon = validCount > 0 && ((tallCount / validCount >= 0.5) || hasConsistentWidth);
 
     const byBucket = new Map();
     candidates.forEach(({ img, index, score, meta }) => {
       const { w, h } = getDimensions(img);
-      const bucket = orientationInvariantBucketKey(w, h);
+      
+      let bucket;
+      if (isWebtoon && w > 0) {
+        // For webtoons, bucket STRICTLY by width rounded to nearest 50px
+        const wRounded = Math.round(w / 50) * 50;
+        bucket = `webtoon|${wRounded}`;
+      } else {
+        bucket = orientationInvariantBucketKey(w, h);
+      }
+      
       if (!byBucket.has(bucket)) byBucket.set(bucket, []);
       byBucket.get(bucket).push({ img, index, score });
     });
@@ -387,6 +424,7 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
           key: `${prefixSig}|${bucket}`,
           items,
           medianWidth,
+          medianHeight,
           prefixSig,
           urlCohesion: cohesion.urlCohesion,
           numericSequenceStrength: cohesion.numericSequenceStrength,
@@ -399,6 +437,7 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
         key: prefixSig,
         items: candidates.map(({ img, index, score }) => ({ img, index, score })),
         medianWidth: medianW || 800,
+        medianHeight: medianH || 1200,
         prefixSig,
         urlCohesion: cohesion.urlCohesion,
         numericSequenceStrength: cohesion.numericSequenceStrength,
@@ -409,29 +448,77 @@ function buildGroups(images, scores, urlMetaList, cohesionByPrefix) {
   const allWithDims = images.map((img, i) => ({ img, index: i, score: scores[i] }))
     .filter(({ img }) => getDimensions(img).w > 0);
   if (allWithDims.length >= MIN_GROUP_COUNT) {
+    let tallCount = 0;
+    allWithDims.forEach(({ img }) => {
+      const { w, h } = getDimensions(img);
+      if (h / w >= 1.9) tallCount++;
+    });
+    const isGlobalWebtoon = tallCount / allWithDims.length >= 0.5;
+
     const byGlobalBucket = new Map();
     allWithDims.forEach(({ img, index, score }) => {
       const { w, h } = getDimensions(img);
-      const bucket = orientationInvariantBucketKey(w, h);
+      
+      let bucket;
+      if (isGlobalWebtoon && w > 0) {
+        const step = 50;
+        const bucketMin = Math.floor(w / step) * step;
+        const bucketMax = Math.ceil(w / step) * step;
+        bucket = `webtoon|${bucketMin}|${bucketMax}`;
+      } else {
+        bucket = orientationInvariantBucketKey(w, h);
+      }
+
       if (!byGlobalBucket.has(bucket)) byGlobalBucket.set(bucket, []);
       byGlobalBucket.get(bucket).push({ img, index, score });
     });
     const med = median(allWithDims.map(({ img }) => getDimensions(img).w));
     byGlobalBucket.forEach((items, bucket) => {
       if (items.length >= MIN_GROUP_COUNT) {
+        const nums = items.map(({ index }) => urlMetaList[index].fileNum);
+        const seqStrength = numericSequenceStrength(nums);
         groups.push({
           key: `global|${bucket}`,
           items,
           medianWidth: med,
+          medianHeight: medianH || 1200,
           prefixSig: 'global',
           urlCohesion: 0,
-          numericSequenceStrength: 0,
+          numericSequenceStrength: seqStrength,
         });
       }
     });
   }
 
   return groups;
+}
+
+function findMainBlock(indices, maxGap = 40) {
+  if (indices.length === 0) return { min: 0, max: 0 };
+  const sorted = [...indices].sort((a, b) => a - b);
+  let bestStart = sorted[0], bestEnd = sorted[0], bestLen = 1;
+  let currentStart = sorted[0], currentEnd = sorted[0], currentLen = 1;
+  
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] - currentEnd <= maxGap) {
+      currentEnd = sorted[i];
+      currentLen++;
+    } else {
+      if (currentLen > bestLen) {
+        bestLen = currentLen;
+        bestStart = currentStart;
+        bestEnd = currentEnd;
+      }
+      currentStart = sorted[i];
+      currentEnd = sorted[i];
+      currentLen = 1;
+    }
+  }
+  if (currentLen > bestLen) {
+    bestStart = currentStart;
+    bestEnd = currentEnd;
+  }
+  return { min: bestStart, max: bestEnd };
 }
 
 function median(arr) {
@@ -531,7 +618,7 @@ export function autoDetectPages(images, opts = {}) {
 
   const urlCounts = new Map();
   images.forEach((img) => {
-    const u = getUrl(img).split('?')[0].split('#')[0];
+    const u = getUrl(img).split('#')[0];
     urlCounts.set(u, (urlCounts.get(u) || 0) + 1);
   });
 
@@ -611,12 +698,21 @@ export function autoDetectPages(images, opts = {}) {
     const count = best.group.items.length;
     const gatedBoost = urlCohesion >= COHESION_FOR_SIMILARITY_BOOST && count >= COUNT_FOR_SIMILARITY_BOOST && winnerPrefixSig && winnerPrefixSig !== 'global';
 
+    const winnerIndices = best.group.items.map((item) => item.index);
+    const mainBlock = findMainBlock(winnerIndices, 40);
+
     const winnerMetasForSim = best.group.items.map(({ index: idx }) => urlMetaList[idx] || {});
     selected = best.group.items
       .filter(({ score, index }) => {
         const meta = urlMetaList[index] || {};
         const urlSim = urlSimilarityToWinner(meta, winnerPrefixSig, winnerMetasForSim);
-        const boost = gatedBoost ? Math.min(SIMILARITY_BOOST_CAP, urlSim * SIMILARITY_BOOST_CAP) : 0;
+        let boost = gatedBoost ? Math.min(SIMILARITY_BOOST_CAP, urlSim * SIMILARITY_BOOST_CAP) : 0;
+        
+        // Penalize heavily if wildly outside the main block (DOM Proximity)
+        if (index < mainBlock.min - 50 || index > mainBlock.max + 50) {
+          boost -= 50;
+        }
+
         return score + boost >= MIN_PAGE_SCORE;
       })
       .map(({ img }) => img);
@@ -647,28 +743,40 @@ export function autoDetectPages(images, opts = {}) {
     const madArea = selectedAreas.length > 0 ? mad(selectedAreas) : 0;
     const areaMin = medianArea * SPREAD_AREA_MIN;
     const areaMax = medianArea * SPREAD_AREA_MAX;
-    const areaMinMAD = medianArea - MAD_K * (madArea || medianArea * 0.3);
-    const areaMaxMAD = medianArea + MAD_K * (madArea || medianArea * 0.3);
+    const areaMinMAD = medianArea - MAD_K * (madArea || medianArea * 0.35);
+    const areaMaxMAD = medianArea + MAD_K * (madArea || medianArea * 0.35);
 
     if (winnerPrefixSig && winnerPrefixSig !== 'global' && urlCohesion >= COHESION_FOR_SIMILARITY_BOOST && count >= COUNT_FOR_SIMILARITY_BOOST) {
       const added = [];
       images.forEach((img, i) => {
         if (selectedKeys.has(imageKey(img))) return;
         const meta = urlMetaList[i] || {};
-        if (meta.prefixSig !== winnerPrefixSig) return;
         const url = getUrl(img);
-        if ((url.match(JUNK_TOKENS) || []).length > 0) return;
+        if (meta.prefixSig !== winnerPrefixSig) return;
+        
+        // DOM Proximity: exclude if wildly outside main block
+        if (i < mainBlock.min - 50 || i > mainBlock.max + 50) return;
+
         const urlSim = urlSimilarityToWinner(meta, winnerPrefixSig, selectedMetas);
         const { w, h } = getDimensions(img);
         const area = w * h;
+        
+        // Exact 2x Spread Detection
+        const medianW = best.group.medianWidth || medianArea / (best.group.medianHeight || 1200);
+        const medianH = best.group.medianHeight || 1200;
+        const isExactSpread = w > 0 && h > 0 && 
+                              Math.abs(w - medianW * 2) / (medianW * 2) < 0.15 && 
+                              Math.abs(h - medianH) / medianH < 0.15;
+
         const inAreaRange = area > 0 && area >= areaMinMAD && area <= areaMaxMAD;
-        const inSpreadRange = area > 0 && area >= areaMin && area <= areaMax;
+        const inSpreadRange = isExactSpread || (area > 0 && area >= areaMin && area <= areaMax);
         const allowOverride = urlCohesion >= COHESION_FOR_OVERRIDE && urlSim >= SIMILARITY_FOR_OVERRIDE && scores[i] >= MIN_SCORE_OVERRIDE;
+        
         if (inSpreadRange && scores[i] >= MIN_PAGE_SCORE) {
           selectedKeys.add(imageKey(img));
           added.push(img);
           spreadIncludedReasons.push({ index: i, area, medianArea, prefixSig: winnerPrefixSig });
-        } else if (allowOverride && inAreaRange) {
+        } else if (allowOverride) {
           selectedKeys.add(imageKey(img));
           added.push(img);
           similarityIncludedReasons.push({ index: i, area, medianArea, urlSimilarityToWinner: urlSim, includedByUrlSimilarity: true });

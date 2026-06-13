@@ -5,8 +5,9 @@
 
 const mockState = {};
 const mockGetElementById = jest.fn().mockReturnValue({ textContent: '', style: { display: '' } });
+const mockQuerySelector = jest.fn().mockReturnValue({ classList: { add: jest.fn(), remove: jest.fn() }, style: { display: '' } });
 if (typeof global.document === 'undefined') {
-	global.document = { getElementById: mockGetElementById };
+	global.document = { getElementById: mockGetElementById, querySelector: mockQuerySelector };
 }
 const mockAutoDetectPages = jest.fn().mockReturnValue({
 	confidence: 0.8,
@@ -46,7 +47,10 @@ describe('auto-detect controller', () => {
 		jest.clearAllMocks();
 		Object.keys(mockState).forEach((k) => delete mockState[k]);
 		mockState.filteredImages = [...twoImages];
-		if (global.document) global.document.getElementById = mockGetElementById;
+		if (global.document) {
+			global.document.getElementById = mockGetElementById;
+			global.document.querySelector = mockQuerySelector;
+		}
 	});
 
 	it('OFF => no auto scan: runAutoDetectAndApply(false) when autoDetectEnabled is false does not call autoDetectPages', () => {
@@ -56,15 +60,21 @@ describe('auto-detect controller', () => {
 	});
 
 	it('Rescan runs auto-detect even when OFF: runAutoDetectAndApply(true) when autoDetectEnabled is false calls autoDetectPages', () => {
+		jest.useFakeTimers();
 		mockState.autoDetectEnabled = false;
 		runAutoDetectAndApply(true);
+		jest.runAllTimers();
 		expect(mockAutoDetectPages).toHaveBeenCalledWith(mockState.filteredImages);
+		jest.useRealTimers();
 	});
 
 	it('When auto-detect ON, runAutoDetectAndApply(false) runs autoDetectPages', () => {
+		jest.useFakeTimers();
 		mockState.autoDetectEnabled = true;
 		runAutoDetectAndApply(false);
+		jest.runAllTimers();
 		expect(mockAutoDetectPages).toHaveBeenCalledWith(mockState.filteredImages);
+		jest.useRealTimers();
 	});
 
 	it('setAllSelectedAndRender sets all filteredImages to checked and persists', () => {
@@ -76,9 +86,12 @@ describe('auto-detect controller', () => {
 	});
 
 	it('runAutoDetectAndApply with no filteredImages does not call autoDetectPages', () => {
+		jest.useFakeTimers();
 		mockState.filteredImages = [];
 		mockState.autoDetectEnabled = true;
 		runAutoDetectAndApply(false);
+		jest.runAllTimers();
 		expect(mockAutoDetectPages).not.toHaveBeenCalled();
+		jest.useRealTimers();
 	});
 });

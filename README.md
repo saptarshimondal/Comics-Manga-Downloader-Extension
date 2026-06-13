@@ -133,6 +133,7 @@ A simple cross-browser extension to download comics / manga as CBZ, PDF, or ZIP 
 ## Supported sites and limitations
 
 This extension works on many sites where pages are rendered as accessible `<img>` or `<canvas>` elements.
+It is optimized to handle different comic formats, including standard comic pages, two-page spreads, and long-strip Webtoons.
 
 It may not work (or may download blank/missing pages) on sites that:
 - require login with restricted image access
