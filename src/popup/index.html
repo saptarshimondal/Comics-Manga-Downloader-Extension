@@ -702,15 +702,15 @@
   </main>
 
   <!-- Downloading Overlay -->
-  <div id="downloading_overlay">
+  <div id="downloading_overlay" class="show" style="display: flex;">
     <div id="downloading_content">
-      <h3 id="download_overlay_title">Downloading PDF...</h3>
+      <h3 id="download_overlay_title">Scanning pages...</h3>
       <div id="download_progress_bar">
-        <div id="download_progress_fill"></div>
+        <div id="download_progress_fill" style="width: 100%;"></div>
       </div>
-      <div id="download_progress_text">Preparing download...</div>
+      <div id="download_progress_text">Extracting images from page...</div>
       <div id="download_error_message"></div>
-      <button type="button" id="download_overlay_close" aria-label="Close">Close</button>
+      <button type="button" id="download_overlay_close" aria-label="Close" style="display: none;">Close</button>
     </div>
   </div>
 </body>

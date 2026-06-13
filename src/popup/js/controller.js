@@ -105,7 +105,7 @@ export const runAutoDetectAndApply = (force = false) => {
 			rescanBtn.disabled = false;
 			rescanBtn.textContent = 'Rescan';
 		}
-		if (overlay) {
+		if (overlay && !DownloadView.isDownloading) {
 			overlay.classList.remove('show');
 			overlay.style.display = 'none';
 		}
@@ -361,6 +361,7 @@ export const init = async function ({ images, title, pageUrl }) {
 
 	applyFilters();
 
+	let autoDetectRan = false;
 	if (saved && saved.imageSelection && typeof saved.imageSelection === 'object') {
 		let filteredImages = getState('filteredImages') || [];
 		filteredImages = filteredImages.map((img) => {
@@ -373,12 +374,21 @@ export const init = async function ({ images, title, pageUrl }) {
 		setState('filteredImages', filteredImages);
 	} else if (getState('autoDetectEnabled') !== false) {
 		runAutoDetectAndApply();
+		autoDetectRan = true;
 	}
 
 	// Restore download state first, before rendering
 	await DownloadView.restoreDownloadState();
 	// Restore user's preferred "Download as" format (CBZ/PDF/ZIP) from storage; skip if dropdown disabled (download in progress)
 	await DownloadView.restorePreferredFormat();
+
+	if (!autoDetectRan && !DownloadView.isDownloading) {
+		const overlay = document.querySelector('#downloading_overlay');
+		if (overlay) {
+			overlay.classList.remove('show');
+			overlay.style.display = 'none';
+		}
+	}
 
 	// Sync URL filter input and dimension filter UI from state
 	const queryInput = document.querySelector('#query');
